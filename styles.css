@@ -23,3 +23,46 @@
 @media(max-width:520px){.choice-grid{grid-template-columns:1fr}.onboarding-card{padding:22px}.onboarding-actions{align-items:stretch;flex-direction:column}.onboarding-actions .button{width:100%;text-align:center}}
 /* Invitations */
 .invite-layout{grid-template-columns:1.15fr .85fr;align-items:start}.invite-form textarea{width:100%;margin-top:8px;padding:13px;border-radius:10px;border:1px solid var(--border);background:#080914;color:#fff;resize:vertical}.invite-warning{padding:14px 16px;border:1px solid rgba(255,122,69,.45);border-radius:12px;background:rgba(255,122,69,.1);color:#ffd9c9;margin:14px 0}.invite-summary ol{padding-left:22px;color:var(--muted);line-height:1.8}.invitation-list{margin-top:45px}.section-heading.compact h2{font-size:clamp(2rem,4vw,3.5rem);margin:0;font-family:Anton,Impact,sans-serif;text-transform:uppercase}.filter-links{display:flex;gap:8px;flex-wrap:wrap}.filter-links a{padding:8px 12px;border:1px solid var(--border);border-radius:999px;color:var(--muted);text-decoration:none}.filter-links a.active{color:#fff;border-color:var(--cyan);background:rgba(39,215,255,.1)}.role-badge,.status-badge{display:inline-block;padding:6px 9px;border-radius:999px;font-size:.75rem;font-weight:900;text-transform:uppercase;letter-spacing:.05em}.role-badge.admin{background:rgba(255,77,184,.15);color:#ff9fd5}.role-badge.fan{background:rgba(39,215,255,.13);color:#8feaff}.status-badge.pending{background:rgba(255,190,70,.13);color:#ffd583}.status-badge.accepted{background:rgba(40,200,120,.14);color:#8df0b8}.status-badge.expired,.status-badge.revoked{background:rgba(255,255,255,.08);color:var(--muted)}.invite-message{border-left:3px solid var(--cyan);margin:20px 0;padding:12px 16px;background:rgba(39,215,255,.06);color:#d7d9e5}.admin-actions{display:flex;gap:10px;flex-wrap:wrap}@media(max-width:850px){.invite-layout{grid-template-columns:1fr}.section-heading.compact{align-items:flex-start;flex-direction:column}}
+
+/* User administration controls */
+.admin-user-control {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  flex-wrap: wrap;
+}
+.admin-user-control select {
+  min-width: 145px;
+  width: auto;
+  margin: 0;
+}
+.admin-note {
+  margin-top: 1rem;
+}
+.badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: .45rem;
+  padding: .15rem .5rem;
+  border: 1px solid rgba(90, 220, 255, .35);
+  border-radius: 999px;
+  font-size: .72rem;
+  line-height: 1.2;
+  color: #9deeff;
+  background: rgba(35, 174, 255, .08);
+}
+@media (max-width: 1100px) {
+  .table-wrap table { min-width: 1180px; }
+}
+
+
+/* Admin user row actions */
+.admin-row-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .55rem;
+}
+.admin-row-actions .inline-form {
+  margin: 0;
+}
