@@ -1,0 +1,18 @@
+<?php
+declare(strict_types=1);
+$lock=__DIR__.'/config/installed.lock'; if(file_exists($lock)){http_response_code(403);exit('Geek Nation Multiverse is already installed.');}
+$error='';
+if($_SERVER['REQUEST_METHOD']==='POST'){
+ try{
+  $dbPass=(string)($_POST['db_password']??''); $smtpPass=(string)($_POST['smtp_password']??'');
+  if($dbPass===''||$smtpPass===''||!filter_var($_POST['admin_email']??'',FILTER_VALIDATE_EMAIL)) throw new RuntimeException('Complete every required field.');
+  $cfg=['app'=>['name'=>'Geek Nation Multiverse','url'=>rtrim((string)($_POST['app_url']??'https://geeknationmultiverse.com'),'/'),'environment'=>'production','session_name'=>'gnm_session'],'database'=>['host'=>'db5020968488.hosting-data.io','port'=>3306,'name'=>'dbs15917705','user'=>'dbu1235005','password'=>$dbPass,'charset'=>'utf8mb4'],'mail'=>['host'=>'smtp.ionos.com','port'=>587,'encryption'=>'tls','username'=>(string)($_POST['smtp_username']??'admin@geeknationmultiverse.com'),'password'=>$smtpPass,'from_email'=>(string)($_POST['smtp_username']??'admin@geeknationmultiverse.com'),'from_name'=>'Geek Nation Multiverse']];
+  $dsn='mysql:host='.$cfg['database']['host'].';port=3306;dbname='.$cfg['database']['name'].';charset=utf8mb4'; $pdo=new PDO($dsn,$cfg['database']['user'],$dbPass,[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION]);
+  $sql=file_get_contents(__DIR__.'/database/schema.sql'); foreach(array_filter(array_map('trim',preg_split('/;\s*(?:\r?\n|$)/',$sql))) as $q)$pdo->exec($q);
+  $s=$pdo->prepare("INSERT INTO users(username,email,password_hash,display_name,role,status,company_brand_access,email_verified_at) VALUES(?,?,?,?, 'admin','active','approved',NOW())");
+  $s->execute([(string)($_POST['admin_username']??'admin'),strtolower((string)$_POST['admin_email']),password_hash((string)$_POST['admin_password'],PASSWORD_DEFAULT),(string)($_POST['admin_name']??'admin')]);
+  $export="<?php\nreturn ".var_export($cfg,true).";\n"; file_put_contents(__DIR__.'/config/config.php',$export,LOCK_EX); file_put_contents($lock,date(DATE_ATOM));
+  header('Location: login.php?installed=1'); exit;
+ }catch(Throwable $e){$error=$e->getMessage();}
+}
+?><!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Install Geek Nation Multiverse</title><link rel="stylesheet" href="styles.css"></head><body><div class="space-bg"></div><main class="auth-page"><form class="auth-card" method="post"><img class="auth-logo" src="assets/geek-nation-multiverse-logo.png"><p class="eyebrow">SYSTEM SETUP</p><h1>Install the Multiverse</h1><?php if($error):?><div class="alert error"><?=htmlspecialchars($error)?></div><?php endif;?><label>Installation URL<input name="app_url" value="https://geeknationmultiverse.com" required></label><label>Database password<input type="password" name="db_password" required></label><hr><label>Administrator name<input name="admin_name" value="admin" required></label><label>Administrator email<input type="email" name="admin_email" value="admin@geeknationmultiverse.com" required></label><label>Administrator username<input name="admin_username" value="admin" required></label><label>Administrator password<input type="password" name="admin_password" minlength="12" required></label><hr><label>SMTP mailbox / username<input type="email" name="smtp_username" value="admin@geeknationmultiverse.com" required></label><label>SMTP mailbox password<input type="password" name="smtp_password" required></label><p class="muted">SMTP: smtp.ionos.com, port 587, TLS/STARTTLS</p><button class="button primary" type="submit">Install Application</button><p class="creator-credit">Created by Marc Delsoin, Abdoul Ba, Trevor Rukwava, &amp; Sean Pisano</p></form></main></body></html>

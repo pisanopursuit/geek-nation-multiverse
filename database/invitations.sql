@@ -1,0 +1,21 @@
+CREATE TABLE IF NOT EXISTS invitations (
+ id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+ email VARCHAR(190) NOT NULL,
+ recipient_name VARCHAR(150) NULL,
+ invitation_type ENUM('member','admin') NOT NULL DEFAULT 'member',
+ assigned_role ENUM('fan','admin') NOT NULL DEFAULT 'fan',
+ personal_message TEXT NULL,
+ token_hash CHAR(64) NOT NULL UNIQUE,
+ status ENUM('pending','accepted','expired','revoked') NOT NULL DEFAULT 'pending',
+ invited_by BIGINT UNSIGNED NOT NULL,
+ expires_at DATETIME NOT NULL,
+ accepted_by BIGINT UNSIGNED NULL,
+ accepted_at DATETIME NULL,
+ created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+ CONSTRAINT fk_invitation_sender FOREIGN KEY(invited_by) REFERENCES users(id) ON DELETE CASCADE,
+ CONSTRAINT fk_invitation_acceptor FOREIGN KEY(accepted_by) REFERENCES users(id) ON DELETE SET NULL,
+ INDEX idx_invitation_email(email),
+ INDEX idx_invitation_status(status),
+ INDEX idx_invitation_expires(expires_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

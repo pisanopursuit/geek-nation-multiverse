@@ -1,0 +1,4 @@
+/config/config.php
+/config/installed.lock
+*.log
+.DS_Store
