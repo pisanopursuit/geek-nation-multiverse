@@ -93,6 +93,7 @@ app_header('User Administration');
 
 <p class="admin-actions">
     <a class="button primary" href="invitations.php">Invite Users & Admins</a>
+    <a class="button ghost" href="companies.php">Manage Companies</a>
     <a class="button ghost" href="identity.php">Manage User Identity Options</a>
 </p>
 

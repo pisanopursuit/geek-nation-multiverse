@@ -40,7 +40,7 @@ function require_auth(): void { if (!user()) { flash('error','Please sign in to 
 function require_admin(): void { require_auth(); if ((user()['role'] ?? '') !== 'admin') { http_response_code(403); exit('Administrator access required.'); } }
 function app_header(string $title): void {
     $u=user(); $full=e($title.' | '.config('app.name')); echo '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'.$full.'</title><link rel="stylesheet" href="'.e(base_url('styles.css')).'"></head><body><div class="space-bg"></div><header class="site-header"><a class="brand" href="'.e(base_url()).'"><img src="'.e(base_url('assets/geek-nation-multiverse-logo.png')).'" alt="Geek Nation Multiverse"></a><nav class="main-nav"><a href="'.e(base_url()).'">Home</a>';
-    if ($u) { echo '<a href="'.e(base_url('dashboard.php')).'">Dashboard</a><a href="'.e(base_url('profile.php?u='.urlencode($u['username']))).'">Profile</a>'; if ($u['role']==='admin') echo '<a href="'.e(base_url('admin/users.php')).'">Admin</a><a href="'.e(base_url('admin/invitations.php')).'">Invitations</a>'; }
+    if ($u) { echo '<a href="'.e(base_url('dashboard.php')).'">Dashboard</a><a href="'.e(base_url('company/index.php')).'">Companies</a><a href="'.e(base_url('profile.php?u='.urlencode($u['username']))).'">Profile</a>'; if ($u['role']==='admin') echo '<a href="'.e(base_url('admin/users.php')).'">Admin</a><a href="'.e(base_url('admin/invitations.php')).'">Invitations</a>'; }
     echo '</nav><div class="header-actions">';
     if ($u) echo '<span class="user-chip">'.e($u['display_name']).'</span><a class="button ghost" href="'.e(base_url('logout.php')).'">Sign Out</a>'; else echo '<a class="button ghost" href="'.e(base_url('login.php')).'">Sign In</a><a class="button primary" href="'.e(base_url('register.php')).'">Join</a>';
     echo '</div></header><main class="app-shell">';
@@ -137,4 +137,28 @@ function invitation_email_html(array $invitation, string $rawToken): string {
       .($message!==''?'<blockquote style="border-left:3px solid #27d7ff;margin:20px 0;padding:10px 16px;color:#d7d9e5">'.nl2br(e($message)).'</blockquote>':'')
       .'<p><a href="'.e($link).'" style="display:inline-block;background:#6f4cff;color:white;text-decoration:none;padding:13px 20px;border-radius:10px;font-weight:bold">Accept invitation</a></p>'
       .'<p style="color:#aaaec2">This single-use invitation expires in 7 days. If you were not expecting it, you can ignore this email.</p></div>';
+}
+
+function companies_schema_ready(): bool {
+    try { db()->query('SELECT 1 FROM companies LIMIT 1'); return true; }
+    catch (Throwable $e) { return false; }
+}
+function company_slug(string $name): string {
+    $slug = strtolower(trim(preg_replace('/[^a-z0-9]+/i', '-', $name), '-'));
+    if ($slug === '') $slug = 'company';
+    $base=$slug; $i=2;
+    $s=db()->prepare('SELECT COUNT(*) FROM companies WHERE slug=?');
+    while(true){$s->execute([$slug]); if((int)$s->fetchColumn()===0)return $slug; $slug=$base.'-'.$i++;}
+}
+function company_by_slug(string $slug): ?array {
+    $s=db()->prepare('SELECT c.*,u.display_name AS submitter_name,u.username AS submitter_username FROM companies c JOIN users u ON u.id=c.submitted_by WHERE c.slug=? LIMIT 1');
+    $s->execute([$slug]); return $s->fetch() ?: null;
+}
+function can_manage_company(array $company, ?array $u=null): bool {
+    $u=$u?:user(); if(!$u)return false; if(($u['role']??'')==='admin')return true;
+    $s=db()->prepare("SELECT COUNT(*) FROM company_members WHERE company_id=? AND user_id=? AND status='active' AND company_role IN ('owner','company_admin')");
+    $s->execute([(int)$company['id'],(int)$u['id']]); return (int)$s->fetchColumn()>0;
+}
+function company_member_for_user(int $companyId,int $userId): ?array {
+    $s=db()->prepare('SELECT * FROM company_members WHERE company_id=? AND user_id=? LIMIT 1');$s->execute([$companyId,$userId]);return $s->fetch()?:null;
 }

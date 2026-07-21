@@ -68,3 +68,15 @@ Administrators can invite either:
 - **Administrator** — creates an active `admin` account with full administration access.
 
 Invitation links are single-use, stored as SHA-256 hashes, and expire after seven days. Accepting an invitation verifies the invited email and routes the new account into User Identity onboarding.
+
+
+## Companies module
+
+After uploading this version to an existing installation, sign in as an administrator and visit `upgrade-companies.php`. The safe upgrade adds company profiles, declared member positions, fan submissions, membership roles, and the company approval queue.
+
+Workflow:
+1. Any active, email-verified member can submit a company.
+2. The submitter declares an official relationship and position, or identifies as a fan.
+3. An administrator reviews the submission in `admin/companies.php`.
+4. On approval, an officially affiliated submitter becomes Company Owner. A fan submitter remains a fan and receives no ownership permissions.
+5. Approved companies receive public profiles and can be managed by owners or platform administrators.
