@@ -1,12 +1,12 @@
 const universes = [
-  ['💥','Comics','Heroes, indies, graphic novels','#651fff','#e53935'],
-  ['🗡️','Fantasy','Magic, quests, myths, worlds','#00695c','#43a047'],
-  ['🚀','Sci-Fi','Space, cyberpunk, robots, futures','#0d47a1','#00b8d4'],
-  ['👾','Gaming','Console, PC, retro, indie','#311b92','#7c4dff'],
-  ['🌸','Anime & Manga','Series, studios, art, cosplay','#ad1457','#ff80ab'],
-  ['🎲','Tabletop','RPGs, cards, minis, board games','#e65100','#ffb300'],
-  ['🧟','Horror','Monsters, paranormal, slashers','#3e0000','#b71c1c'],
-  ['🦸','Cosplay','Armor, props, wigs, performance','#004d40','#26a69a']
+  ['💥','Comics','Heroes, indies, graphic novels','#651fff','#e53935','comics'],
+  ['🗡️','Fantasy','Magic, quests, myths, worlds','#00695c','#43a047','fantasy'],
+  ['🚀','Sci-Fi','Space, cyberpunk, robots, futures','#0d47a1','#00b8d4','sci-fi'],
+  ['👾','Gaming','Console, PC, retro, indie','#311b92','#7c4dff','gaming'],
+  ['🌸','Anime & Manga','Series, studios, art, cosplay','#ad1457','#ff80ab','anime-manga'],
+  ['🎲','Tabletop','RPGs, cards, minis, board games','#e65100','#ffb300','tabletop'],
+  ['🧟','Horror','Monsters, paranormal, slashers','#3e0000','#b71c1c','horror'],
+  ['🦸','Cosplay','Armor, props, wigs, performance','#004d40','#26a69a','cosplay']
 ];
 const booths = [
   ['Nova Forge Props','Cosplay','Custom helmets, armor, and prop commissions','#133b5c','#8e44ad'],
@@ -40,7 +40,7 @@ const products = [
 ];
 
 const byId = id => document.getElementById(id);
-byId('universe-grid').innerHTML = universes.map(([icon,name,desc,c1,c2]) => `<article class="universe-card" style="--u1:${c1};--u2:${c2}" data-search="${name}"><div class="universe-icon">${icon}</div><h3>${name}</h3><p>${desc}</p></article>`).join('');
+byId('universe-grid').innerHTML = universes.map(([icon,name,desc,c1,c2,slug]) => `<a class="universe-card" style="--universe-primary:${c1};--universe-secondary:${c2};--universe-accent:${c2};--universe-text:#fff" href="universe/view.php?slug=${encodeURIComponent(slug)}"><div class="universe-card-overlay"></div><div class="universe-card-content"><div class="universe-icon">${icon}</div><div><h2>${name}</h2><p>${desc}</p></div></div></a>`).join('');
 byId('booth-filters').innerHTML = ['All','Comics','Cosplay','Anime','Tabletop','Gaming','Horror'].map((x,i)=>`<button class="${i===0?'active':''}" data-filter="${x}">${x}</button>`).join('');
 function renderBooths(filter='All') { byId('booth-grid').innerHTML = booths.filter(b=>filter==='All'||b[1]===filter).map(([name,cat,desc,c1,c2])=>`<article class="booth-card"><div class="booth-cover" style="--b1:${c1};--b2:${c2}"><span>${cat}</span></div><div class="booth-body"><h3>${name}</h3><p>${desc}</p><div class="booth-meta"><span>★ Featured Booth</span><span>Visit →</span></div></div></article>`).join(''); }
 renderBooths();
@@ -51,7 +51,7 @@ byId('product-grid').innerHTML = products.map(([icon,name,price,c1,c2])=>`<artic
 
 document.querySelectorAll('[data-filter]').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('[data-filter]').forEach(x=>x.classList.remove('active'));btn.classList.add('active');renderBooths(btn.dataset.filter)}));
 document.querySelectorAll('[data-search]').forEach(el=>el.addEventListener('click',()=>{byId('search-input').value=el.dataset.search||el.textContent.trim();byId('booths').scrollIntoView()}));
-byId('hero-search').addEventListener('submit',e=>{e.preventDefault(); const q=byId('search-input').value.trim(); if(q) openModal('search',q);});
+byId('hero-search').addEventListener('submit',e=>{ if(!byId('search-input').value.trim()) e.preventDefault(); });
 
 const modal = byId('modal');
 function openModal(type,data=''){

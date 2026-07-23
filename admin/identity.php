@@ -1,6 +1,6 @@
 <?php
 require __DIR__.'/../includes/bootstrap.php';require_admin();if(!identity_schema_ready())redirect('upgrade.php');
-$allowed=['identity_types'=>['Identity Types','name'],'interests'=>['Interests','name'],'universes'=>['Universes','name']];$type=$_GET['type']??'identity_types';if(!isset($allowed[$type]))$type='identity_types';
+$allowed=['identity_types'=>['Community Identities','name'],'interests'=>['Interests','name']];$type=$_GET['type']??'identity_types';if(!isset($allowed[$type]))$type='identity_types';
 if($_SERVER['REQUEST_METHOD']==='POST'){
  verify_csrf();$action=$_POST['action']??'';
  if($action==='add'){$name=trim($_POST['name']??'');if($name!==''){$slug=strtolower(trim(preg_replace('/[^a-z0-9]+/i','-',$name),'-'));if($type==='universes')db()->prepare('INSERT INTO universes(name,slug,icon,sort_order) VALUES(?,?,?,?)')->execute([$name,$slug,trim($_POST['icon']??''),(int)($_POST['sort_order']??0)]);else db()->prepare("INSERT INTO {$type}(name,slug,sort_order) VALUES(?,?,?)")->execute([$name,$slug,(int)($_POST['sort_order']??0)]);flash('success','Option added.');}}

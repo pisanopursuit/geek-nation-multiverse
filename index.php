@@ -20,7 +20,7 @@
     </a>
     <button class="menu-toggle" aria-expanded="false" aria-controls="main-nav">☰</button>
     <nav id="main-nav" class="main-nav" aria-label="Primary navigation">
-      <a href="#universes">Universes</a>
+      <a href="universe/index.php">Universes</a>
       <a href="#booths">Booths</a>
       <a href="#artist-alley">Artist Alley</a>
       <a href="#panels">Panels</a>
@@ -41,9 +41,9 @@
         <p class="eyebrow">THE PERMANENT ONLINE CONVENTION</p>
         <h1>Every story. Every fan. One place.</h1>
         <p class="hero-copy">Explore fandom universes, discover creator booths, shop collectibles, attend panels, learn geek crafts, and connect with the people building the culture.</p>
-        <form class="hero-search" id="hero-search">
+        <form class="hero-search" id="hero-search" action="universe/index.php" method="get">
           <label class="sr-only" for="search-input">Search the multiverse</label>
-          <input id="search-input" type="search" placeholder="Search universes, brands, characters, booths, or products" />
+          <input id="search-input" name="q" type="search" placeholder="Search universes" />
           <button type="submit">Search</button>
         </form>
         <div class="quick-links" aria-label="Popular searches">
@@ -69,7 +69,7 @@
     <section id="universes" class="section">
       <div class="section-heading">
         <div><p class="eyebrow">EXPLORE</p><h2>Enter a Universe</h2></div>
-        <button class="text-link" data-view-all="universes">View all universes →</button>
+        <a class="text-link" href="universe/index.php">View all universes →</a>
       </div>
       <div class="universe-grid" id="universe-grid"></div>
     </section>

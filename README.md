@@ -80,3 +80,20 @@ Workflow:
 3. An administrator reviews the submission in `admin/companies.php`.
 4. On approval, an officially affiliated submitter becomes Company Owner. A fan submitter remains a fan and receives no ownership permissions.
 5. Approved companies receive public profiles and can be managed by owners or platform administrators.
+
+## Brands + Admin Import Center
+
+Run `upgrade-brands-imports.php` once as an administrator after deploying this version. The upgrade adds brand profiles, brand memberships and approvals, CSV/TSV import batches, row-level import reports, duplicate skip/update behavior, and draft-by-default imports.
+
+Company imports accept: `name`, `short_description`, `description`, `website`, `public_email`, `location`, `category`, `founded_year`.
+
+Brand imports accept the same descriptive fields plus `company_name`, which must match an existing approved or draft company. Files are limited to 5,000 rows per batch. Imported records remain drafts until an administrator reviews them.
+
+
+## Version 5.1.1
+
+Fixes the Booth Management installer for MySQL servers that do not support `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`. The installer now checks `information_schema` before adding each column and can be safely run again after a failed attempt.
+
+## Version 5.2 — Developer Center
+
+Administrators can now generate a complete connected test environment, run module diagnostics, and safely clean up records by demo batch. Install through `upgrade-developer-center.php`; see `README-v5.2.md`.

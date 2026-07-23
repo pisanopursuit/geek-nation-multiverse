@@ -2,15 +2,3 @@
 /config/installed.lock
 *.log
 .DS_Store
-
-# Environment variables
- .env
- .env.local
-
- # macOS
- .DS_Store
- .AppleDouble
- .LSOverride
- .Spotlight-V100
- .Trashes
- ._*

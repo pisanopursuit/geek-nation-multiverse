@@ -1,0 +1,13 @@
+<?php
+require __DIR__.'/../includes/bootstrap.php';
+if(!universe_engine_ready()){if((user()['role']??'')==='admin')redirect('upgrade-universes.php');http_response_code(503);exit('Universe Engine has not been installed.');}
+$q=trim($_GET['q']??'');$parent=(int)($_GET['parent']??0);
+$sql="SELECT u.*,(SELECT COUNT(*) FROM user_universes uu WHERE uu.universe_id=u.id) member_count,(SELECT COUNT(*) FROM universes c WHERE c.parent_id=u.id AND c.status='approved' AND c.is_active=1) child_count FROM universes u WHERE u.status='approved' AND u.is_active=1";$args=[];
+if($parent>0){$sql.=' AND u.parent_id=?';$args[]=$parent;}else{$sql.=' AND u.parent_id IS NULL';}
+if($q!==''){$sql.=' AND (u.name LIKE ? OR u.description LIKE ? OR u.short_description LIKE ?)';$like='%'.$q.'%';array_push($args,$like,$like,$like);}
+$sql.=' ORDER BY u.is_featured DESC,u.sort_order,u.name';$s=db()->prepare($sql);$s->execute($args);$universes=$s->fetchAll();
+$parentRow=null;if($parent){$ps=db()->prepare('SELECT * FROM universes WHERE id=?');$ps->execute([$parent]);$parentRow=$ps->fetch()?:null;}
+app_header($parentRow?$parentRow['name'].' Universes':'Universes');
+?><section class="dashboard-hero"><p class="eyebrow">EXPLORE THE MULTIVERSE</p><h1><?=$parentRow?'Inside '.e($parentRow['name']):'Enter a Universe'?></h1><p><?=$parentRow?e($parentRow['short_description']?:'Explore the universes inside this world.'):'Start with a broad fandom, then travel deeper into its worlds, franchises, and communities.'?></p></section>
+<section class="universe-toolbar"><form method="get"><input type="search" name="q" value="<?=e($q)?>" placeholder="Search universes"><button class="button primary">Search</button><?php if($parent):?><input type="hidden" name="parent" value="<?=$parent?>"><?php endif?></form><?php if($parentRow):?><a class="button ghost" href="index.php">All root universes</a><?php endif?></section>
+<section class="universe-grid"><?php foreach($universes as $u):?><a class="universe-card" style="<?=e(universe_theme_vars($u))?>" href="view.php?slug=<?=urlencode($u['slug'])?>"><?php if($u['banner_path']):?><img src="<?=e(base_url($u['banner_path']))?>" alt=""><?php endif?><div class="universe-card-overlay"></div><div class="universe-card-content"><span class="universe-icon"><?=e($u['icon']?:'✦')?></span><div><h2><?=e($u['name'])?></h2><p><?=e($u['short_description']?:'Explore this universe.')?></p><small><?=number_format((int)$u['member_count'])?> members · <?=number_format((int)$u['child_count'])?> worlds</small></div></div></a><?php endforeach?><?php if(!$universes):?><article class="app-card"><h2>No universes found</h2><p>Try a different search or return to the main directory.</p></article><?php endif?></section><?php app_footer();
