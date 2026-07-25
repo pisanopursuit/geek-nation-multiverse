@@ -1,167 +1,237 @@
-<?php require __DIR__.'/includes/bootstrap.php'; ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Geek Nation Multiverse — a permanent online convention for fandoms, creators, collectors, brands, panels, education, and virtual booths." />
-  <title>Geek Nation Multiverse</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css" />
-</head>
-<body>
-  <div class="space-bg" aria-hidden="true"></div>
+<?php
+declare(strict_types=1);
+require __DIR__ . '/includes/bootstrap.php';
 
-  <header class="site-header">
-    <a class="brand" href="#top" aria-label="Geek Nation Multiverse home">
-      <img src="assets/geek-nation-multiverse-logo.png" alt="Geek Nation Multiverse" />
+function home_rows(string $sql, array $params = [], int $limit = 4): array {
+    try {
+        $stmt = db()->prepare($sql);
+        $stmt->execute($params);
+        return array_slice($stmt->fetchAll() ?: [], 0, $limit);
+    } catch (Throwable $e) {
+        return [];
+    }
+}
+
+function home_count(string $table): int {
+    if (!preg_match('/^[a-z0-9_]+$/i', $table)) return 0;
+    try { return (int)db()->query("SELECT COUNT(*) FROM {$table}")->fetchColumn(); }
+    catch (Throwable $e) { return 0; }
+}
+
+function home_media_url(?string $path): string {
+    $path = trim((string)$path);
+    if ($path === '') return '';
+    if (preg_match('#^https?://#i', $path)) return $path;
+    return base_url(ltrim($path, '/'));
+}
+
+function home_media_card(array $item, string $href, string $eyebrow, string $icon = 'spark'): void {
+    $title = (string)($item['name'] ?? 'Discover more');
+    $description = trim((string)($item['description'] ?? 'Discover more across Geek Nation Multiverse.'));
+    $image = home_media_url((string)($item['image_path'] ?? ''));
+    $meta = [];
+    if (!empty($item['starts_at'])) $meta[] = date('M j, Y · g:i A', strtotime((string)$item['starts_at']));
+    if (array_key_exists('price', $item) && $item['price'] !== null) $meta[] = '$' . number_format((float)$item['price'], 2);
+    ?>
+    <a class="gnm-home-card" href="<?= e($href) ?>">
+      <div class="gnm-home-card__media<?= $image === '' ? ' gnm-home-card__media--fallback' : '' ?>">
+        <?php if ($image !== ''): ?>
+          <img src="<?= e($image) ?>" alt="<?= e($title) ?>" loading="lazy">
+        <?php else: ?>
+          <span class="gnm-home-card__fallback-icon"><?= gnm_icon($icon) ?></span>
+        <?php endif; ?>
+        <span class="gnm-home-card__eyebrow"><?= e($eyebrow) ?></span>
+      </div>
+      <div class="gnm-home-card__body">
+        <h3><?= e($title) ?></h3>
+        <?php if ($meta): ?><p class="gnm-home-card__meta"><?= e(implode(' · ', $meta)) ?></p><?php endif; ?>
+        <p><?= e($description) ?></p>
+        <span class="gnm-home-card__link">View <?= gnm_icon('arrow') ?></span>
+      </div>
     </a>
-    <button class="menu-toggle" aria-expanded="false" aria-controls="main-nav">☰</button>
-    <nav id="main-nav" class="main-nav" aria-label="Primary navigation">
-      <a href="universe/index.php">Universes</a>
-      <a href="#booths">Booths</a>
-      <a href="#artist-alley">Artist Alley</a>
-      <a href="#panels">Panels</a>
-      <a href="#academy">Academy</a>
-      <a href="#marketplace">Marketplace</a>
-    </nav>
-    <div class="header-actions">
-      <?php if(user()): ?><a class="button ghost" href="dashboard.php">Dashboard</a><?php else: ?><a class="button ghost" href="login.php">Sign In</a><?php endif; ?>
-      <?php if(user()): ?><a class="button primary" href="dashboard.php">Open a Booth</a><?php else: ?><a class="button primary" href="register.php">Join the Multiverse</a><?php endif; ?>
+    <?php
+}
+
+$universes = home_rows("SELECT id, name, slug, COALESCE(NULLIF(description,''), 'Explore this universe.') AS description FROM universes WHERE is_active = 1 ORDER BY is_featured DESC, updated_at DESC", [], 8);
+if (!$universes) {
+    $universes = [
+        ['name'=>'Comics','slug'=>'comics','description'=>'Heroes, indie books, graphic novels, and sequential art.'],
+        ['name'=>'Fantasy','slug'=>'fantasy','description'=>'Epic quests, mythology, magic, and worldbuilding.'],
+        ['name'=>'Science Fiction','slug'=>'science-fiction','description'=>'Space, technology, futures, and impossible ideas.'],
+        ['name'=>'Gaming','slug'=>'gaming','description'=>'Video games, streaming, esports, and game culture.'],
+        ['name'=>'Anime & Manga','slug'=>'anime-manga','description'=>'Series, studios, artists, cosplay, and fandom.'],
+        ['name'=>'Tabletop','slug'=>'tabletop','description'=>'Roleplaying games, miniatures, cards, and board games.'],
+        ['name'=>'Horror','slug'=>'horror','description'=>'Monsters, slashers, dark fiction, and practical effects.'],
+        ['name'=>'Cosplay','slug'=>'cosplay','description'=>'Costuming, fabrication, performance, and community.'],
+    ];
+}
+
+$artists = home_rows("SELECT id, artist_name AS name, slug, COALESCE(NULLIF(headline,''), NULLIF(bio,''), 'Meet this creator in Artist Alley.') AS description, COALESCE(NULLIF(banner_path,''), avatar_path) AS image_path FROM artist_profiles WHERE status = 'approved' ORDER BY is_featured DESC, updated_at DESC", [], 4);
+$booths = home_rows("SELECT id, name, slug, COALESCE(NULLIF(tagline,''), NULLIF(description,''), 'Visit this booth in the virtual exhibit hall.') AS description, COALESCE(NULLIF(banner_path,''), logo_path) AS image_path FROM booths WHERE status = 'approved' ORDER BY is_featured DESC, updated_at DESC", [], 4);
+$events = home_rows("SELECT id, title AS name, slug, COALESCE(NULLIF(subtitle,''), NULLIF(description,''), 'Join this upcoming Geek Nation event.') AS description, starts_at, COALESCE(NULLIF(thumbnail_path,''), banner_path) AS image_path FROM events WHERE status = 'approved' AND starts_at >= NOW() ORDER BY starts_at ASC", [], 4);
+$courses = home_rows("SELECT id, title AS name, slug, COALESCE(NULLIF(subtitle,''), NULLIF(description,''), 'Learn something new in the Multiverse Academy.') AS description, price, COALESCE(NULLIF(thumbnail_path,''), banner_path) AS image_path FROM academy_courses WHERE status = 'approved' ORDER BY is_featured DESC, updated_at DESC", [], 4);
+$collectibles = home_rows("SELECT id, title AS name, slug, COALESCE(NULLIF(description,''), 'Explore this collector listing.') AS description, price, image_path FROM collector_items WHERE status = 'active' ORDER BY is_featured DESC, updated_at DESC", [], 4);
+$companies = home_rows("SELECT id, name, slug, COALESCE(NULLIF(short_description,''), NULLIF(description,''), 'Explore this company.') AS description, COALESCE(NULLIF(banner_path,''), logo_path) AS image_path FROM companies WHERE status = 'approved' ORDER BY updated_at DESC", [], 4);
+$brands = home_rows("SELECT id, name, slug, COALESCE(NULLIF(short_description,''), NULLIF(description,''), 'Explore this brand.') AS description, COALESCE(NULLIF(banner_path,''), logo_path) AS image_path FROM brands WHERE status = 'approved' ORDER BY updated_at DESC", [], 4);
+
+$fallbacks = [
+    'artists' => [
+        ['name'=>'Independent Illustrators','slug'=>'','description'=>'Discover original art, commissions, prints, and visual storytelling.'],
+        ['name'=>'Comic Creators','slug'=>'','description'=>'Meet writers, pencilers, inkers, colorists, and letterers.'],
+        ['name'=>'Prop & Costume Makers','slug'=>'','description'=>'Explore handcrafted armor, props, costumes, and fabrication.'],
+        ['name'=>'Digital Creators','slug'=>'','description'=>'Find concept artists, animators, designers, and new media makers.'],
+    ],
+    'booths' => [
+        ['name'=>'Creator Booths','slug'=>'','description'=>'Shop directly from independent creators and small studios.'],
+        ['name'=>'Convention Exclusives','slug'=>'','description'=>'Find limited releases, special editions, and event-only items.'],
+        ['name'=>'Fan Shops','slug'=>'','description'=>'Browse apparel, accessories, art, and handmade fandom goods.'],
+        ['name'=>'Publishers & Studios','slug'=>'','description'=>'Visit companies building the next generation of geek culture.'],
+    ],
+    'events' => [
+        ['name'=>'Creator Spotlight','slug'=>'','description'=>'Live conversations with artists, writers, makers, and founders.'],
+        ['name'=>'Worldbuilding Workshop','slug'=>'','description'=>'A practical session for building memorable fictional worlds.'],
+        ['name'=>'Collector Roundtable','slug'=>'','description'=>'Collectors discuss preservation, grading, display, and discovery.'],
+        ['name'=>'Cosplay Build Lab','slug'=>'','description'=>'Learn materials, techniques, and planning from experienced makers.'],
+    ],
+    'courses' => [
+        ['name'=>'Drawing for Comics','slug'=>'','description'=>'Build stronger characters, panels, movement, and visual storytelling.'],
+        ['name'=>'Practical Prop Making','slug'=>'','description'=>'Learn accessible fabrication methods from concept through finish.'],
+        ['name'=>'Launch Your Creative Brand','slug'=>'','description'=>'Turn your work into a clear identity, audience, and offering.'],
+        ['name'=>'Tabletop Story Design','slug'=>'','description'=>'Create campaigns, encounters, worlds, and player-driven stories.'],
+    ],
+    'collectibles' => [
+        ['name'=>'Rare Finds','slug'=>'','description'=>'Discover unusual, limited, and hard-to-find collectibles.'],
+        ['name'=>'Recently Listed','slug'=>'','description'=>'See the newest items added by collectors across the Multiverse.'],
+        ['name'=>'Trades Wanted','slug'=>'','description'=>'Connect with collectors searching for fair community trades.'],
+        ['name'=>'Showcase Collections','slug'=>'','description'=>'Explore curated collections and the stories behind them.'],
+    ],
+    'companies' => [
+        ['name'=>'Independent Studios','slug'=>'','description'=>'Meet teams creating comics, games, media, and experiences.'],
+        ['name'=>'Publishers','slug'=>'','description'=>'Discover publishers supporting new voices and bold worlds.'],
+        ['name'=>'Event Producers','slug'=>'','description'=>'Find organizations creating conventions, panels, and meetups.'],
+        ['name'=>'Creative Technology','slug'=>'','description'=>'Explore companies building tools for fans and creators.'],
+    ],
+    'brands' => [
+        ['name'=>'Featured Brands','slug'=>'','description'=>'Discover brands shaping fandom culture and creative commerce.'],
+        ['name'=>'Emerging Brands','slug'=>'','description'=>'Meet new names with original products, ideas, and communities.'],
+        ['name'=>'Creator-Owned Brands','slug'=>'','description'=>'Support businesses built and operated by working creators.'],
+        ['name'=>'Community Partners','slug'=>'','description'=>'Explore organizations supporting the Geek Nation ecosystem.'],
+    ],
+];
+$artists = $artists ?: $fallbacks['artists'];
+$booths = $booths ?: $fallbacks['booths'];
+$events = $events ?: $fallbacks['events'];
+$courses = $courses ?: $fallbacks['courses'];
+$collectibles = $collectibles ?: $fallbacks['collectibles'];
+$companies = $companies ?: $fallbacks['companies'];
+$brands = $brands ?: $fallbacks['brands'];
+
+app_header('Home');
+?>
+<div class="gnm-home">
+  <section class="gnm-feature-hero">
+    <div class="gnm-feature-hero__content">
+      <p class="gnm-eyebrow">THE PERMANENT ONLINE CONVENTION</p>
+      <h1>Every story.<br>Every fan.<br><span>One Multiverse.</span></h1>
+      <p class="gnm-feature-hero__copy">Explore fandom universes, discover creator booths, shop collectibles, attend panels, learn geek crafts, and connect with the people building the culture.</p>
+      <div class="gnm-feature-hero__actions">
+        <?= gnm_button('Explore the Multiverse', base_url('explore.php'), 'primary') ?>
+        <?= gnm_button(user() ? 'Open My Dashboard' : 'Join Geek Nation', user() ? base_url('dashboard.php') : base_url('register.php'), 'secondary') ?>
+      </div>
+      <form class="gnm-feature-search" action="<?= e(base_url('search.php')) ?>" method="get">
+        <label class="sr-only" for="home-search">Search Geek Nation Multiverse</label>
+        <span class="gnm-feature-search__icon"><?= gnm_icon('search') ?></span>
+        <input id="home-search" name="q" type="search" placeholder="Search universes, artists, booths, events, courses, and collectibles">
+        <button type="submit">Search the Multiverse</button>
+      </form>
+      <div class="gnm-feature-hero__tags" aria-label="Popular searches">
+        <span>Popular:</span>
+        <a href="<?= e(base_url('search.php?q=anime')) ?>">Anime</a>
+        <a href="<?= e(base_url('search.php?q=cosplay')) ?>">Cosplay</a>
+        <a href="<?= e(base_url('search.php?q=comics')) ?>">Comics</a>
+        <a href="<?= e(base_url('search.php?q=collectibles')) ?>">Collectibles</a>
+        <a href="<?= e(base_url('search.php?q=tabletop')) ?>">Tabletop</a>
+      </div>
     </div>
-  </header>
-
-  <main id="top">
-    <section class="hero">
-      <div class="hero-orbit orbit-one"></div>
-      <div class="hero-orbit orbit-two"></div>
-      <div class="hero-content">
-        <p class="eyebrow">THE PERMANENT ONLINE CONVENTION</p>
-        <h1>Every story. Every fan. One place.</h1>
-        <p class="hero-copy">Explore fandom universes, discover creator booths, shop collectibles, attend panels, learn geek crafts, and connect with the people building the culture.</p>
-        <form class="hero-search" id="hero-search" action="universe/index.php" method="get">
-          <label class="sr-only" for="search-input">Search the multiverse</label>
-          <input id="search-input" name="q" type="search" placeholder="Search universes" />
-          <button type="submit">Search</button>
-        </form>
-        <div class="quick-links" aria-label="Popular searches">
-          <button data-search="anime">Anime</button>
-          <button data-search="cosplay">Cosplay</button>
-          <button data-search="comics">Comics</button>
-          <button data-search="collectibles">Collectibles</button>
-          <button data-search="tabletop">Tabletop</button>
-        </div>
-      </div>
-      <div class="hero-logo-card">
-        <img src="assets/geek-nation-multiverse-logo.png" alt="Geek Nation Multiverse logo" />
-      </div>
-    </section>
-
-    <section class="stats-strip" aria-label="Platform highlights">
-      <div><strong>24/7</strong><span>Convention Access</span></div>
-      <div><strong>100+</strong><span>Fandom Universes</span></div>
-      <div><strong>500+</strong><span>Creator Booths</span></div>
-      <div><strong>Live</strong><span>Panels & Workshops</span></div>
-    </section>
-
-    <section id="universes" class="section">
-      <div class="section-heading">
-        <div><p class="eyebrow">EXPLORE</p><h2>Enter a Universe</h2></div>
-        <a class="text-link" href="universe/index.php">View all universes →</a>
-      </div>
-      <div class="universe-grid" id="universe-grid"></div>
-    </section>
-
-    <section id="booths" class="section panel-section">
-      <div class="section-heading">
-        <div><p class="eyebrow">VIRTUAL EXHIBIT HALL</p><h2>Featured Booths</h2></div>
-        <div class="filter-row" id="booth-filters"></div>
-      </div>
-      <div class="booth-grid" id="booth-grid"></div>
-    </section>
-
-    <section id="panels" class="section">
-      <div class="section-heading">
-        <div><p class="eyebrow">LIVE NOW & COMING UP</p><h2>Panels and Events</h2></div>
-        <button class="text-link">Build My Schedule →</button>
-      </div>
-      <div class="event-layout">
-        <article class="featured-event">
-          <div class="live-badge">LIVE</div>
-          <div class="event-art portal-art"></div>
-          <div class="event-copy">
-            <p class="event-meta">Main Stage • 7:00 PM ET</p>
-            <h3>Building Worlds: The Future of Independent Fandom</h3>
-            <p>Creators, artists, makers, and community leaders discuss how independent fandoms become thriving universes.</p>
-            <button class="button primary">Join Panel</button>
-          </div>
-        </article>
-        <div class="event-list" id="event-list"></div>
-      </div>
-    </section>
-
-    <section id="artist-alley" class="section artist-section">
-      <div class="artist-copy">
-        <p class="eyebrow">CREATOR DISTRICT</p>
-        <h2>Artist Alley</h2>
-        <p>Meet illustrators, prop builders, comic creators, sculptors, cosplay designers, and independent makers. Commission custom work or discover your next favorite artist.</p>
-        <button class="button secondary">Explore Artist Alley</button>
-      </div>
-      <div class="artist-cards" id="artist-cards"></div>
-    </section>
-
-    <section id="academy" class="section">
-      <div class="section-heading">
-        <div><p class="eyebrow">LEARN FROM THE MAKERS</p><h2>Multiverse Academy</h2></div>
-        <button class="text-link">Browse All Classes →</button>
-      </div>
-      <div class="academy-grid" id="academy-grid"></div>
-    </section>
-
-    <section id="marketplace" class="section marketplace-section">
-      <div class="section-heading">
-        <div><p class="eyebrow">BUY • SELL • TRADE</p><h2>Collector Marketplace</h2></div>
-      </div>
-      <div class="market-tabs" role="tablist">
-        <button class="active" data-market-tab="trending">Trending</button>
-        <button data-market-tab="new">New Arrivals</button>
-        <button data-market-tab="rare">Rare Finds</button>
-        <button data-market-tab="trade">Open to Trade</button>
-      </div>
-      <div class="product-grid" id="product-grid"></div>
-    </section>
-
-    <section class="cta-section">
-      <div>
-        <p class="eyebrow">BUILD YOUR PLACE IN THE MULTIVERSE</p>
-        <h2>Your booth never has to close.</h2>
-        <p>Sell products, host livestreams, publish tutorials, schedule panels, grow followers, and connect your store to the fandoms that matter most.</p>
-      </div>
-      <button class="button primary large" data-modal="booth">Open Your Booth</button>
-    </section>
-  </main>
-
-  <footer class="site-footer">
-    <div class="footer-brand">
-      <img src="assets/geek-nation-multiverse-logo.png" alt="Geek Nation Multiverse" />
-      <p>A permanent online convention for every fandom.</p>
+    <div class="gnm-feature-hero__visual" aria-hidden="true">
+      <div class="gnm-feature-hero__orbit"></div>
+      <img src="<?= e(base_url('assets/geek-nation-multiverse-logo.png')) ?>" alt="">
     </div>
-    <div><h3>Explore</h3><a href="#universes">Universes</a><a href="#booths">Booths</a><a href="#panels">Panels</a></div>
-    <div><h3>Create</h3><a href="#artist-alley">Artist Alley</a><a href="#academy">Teach a Class</a><a href="#marketplace">Sell or Trade</a></div>
-    <div><h3>Company</h3><a href="#">About</a><a href="#">Community Guidelines</a><a href="#">Contact</a></div>
-    <div class="footer-authors"><strong>Authors &amp; Created by:</strong> Marc Delsoin, Abdoul Ba, Trevor Rukwava, &amp; Sean Pisano</div>
-  </footer>
+  </section>
 
-  <div class="modal" id="modal" aria-hidden="true">
-    <div class="modal-backdrop" data-close-modal></div>
-    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-      <button class="modal-close" data-close-modal aria-label="Close">×</button>
-      <div id="modal-content"></div>
+  <section class="gnm-home-stats" aria-label="Geek Nation Multiverse highlights">
+    <div><strong>24/7</strong><span>Convention Access</span></div>
+    <div><strong><?= max(100, home_count('universes')) ?>+</strong><span>Fandom Universes</span></div>
+    <div><strong><?= max(500, home_count('booths')) ?>+</strong><span>Creator Booths</span></div>
+    <div><strong>LIVE</strong><span>Panels & Workshops</span></div>
+  </section>
+
+  <section class="gnm-home-section gnm-home-section--universes">
+    <?php gnm_section_header('Enter a Universe', 'Explore Universes', base_url('universe/index.php'), 'Find the fandom communities, worlds, and interests that feel like home.'); ?>
+    <div class="gnm-universe-grid">
+      <?php foreach ($universes as $i => $item): ?>
+        <a class="gnm-universe-tile gnm-universe-tile--<?= ($i % 8) + 1 ?>" href="<?= e(base_url('universe/' . (!empty($item['slug']) ? 'view.php?slug=' . urlencode((string)$item['slug']) : 'index.php'))) ?>">
+          <span class="gnm-universe-tile__number"><?= str_pad((string)($i + 1), 2, '0', STR_PAD_LEFT) ?></span>
+          <div><h3><?= e((string)$item['name']) ?></h3><p><?= e((string)($item['description'] ?? 'Explore this universe.')) ?></p></div>
+          <span class="gnm-universe-tile__arrow"><?= gnm_icon('arrow') ?></span>
+        </a>
+      <?php endforeach; ?>
     </div>
-  </div>
+  </section>
 
-  <script src="app.js"></script>
-</body>
-</html>
+  <?php
+  $sections = [
+    ['Meet the Artists','Explore Artists','artist-alley/index.php',$artists,'Artist Alley','artist-alley/view.php','accent'],
+    ['Visit the Booths','Explore Booths','booth/index.php',$booths,'Virtual Exhibit Hall','booth/view.php','shop'],
+    ['Panels & Events','Explore Panels & Events','events/index.php',$events,'Live & Upcoming','events/view.php','calendar'],
+    ['Multiverse Academy','Explore the Academy','academy/index.php',$courses,'Learn Something New','academy/view.php','book'],
+    ['Collectors Marketplace','Explore Collectibles','collectors/index.php',$collectibles,'Rare Finds & Community Trades','collectors/item.php','star'],
+  ];
+  foreach ($sections as [$title,$explore,$indexPath,$items,$eyebrow,$viewPath,$icon]): ?>
+    <section class="gnm-home-section">
+      <?php gnm_section_header($title, $explore, base_url($indexPath)); ?>
+      <div class="gnm-home-card-grid">
+        <?php foreach (array_slice($items,0,4) as $item):
+          $href = base_url($indexPath);
+          if (!empty($item['slug'])) $href = base_url($viewPath . '?slug=' . urlencode((string)$item['slug']));
+          home_media_card($item, $href, $eyebrow, $icon);
+        endforeach; ?>
+      </div>
+    </section>
+  <?php endforeach; ?>
+
+  <section class="gnm-home-section gnm-home-community">
+    <?php gnm_section_header('Community Activity', 'Explore Community', base_url('explore.php'), 'The Multiverse is always moving. Find something new every time you visit.'); ?>
+    <div class="gnm-community-grid">
+      <?php gnm_action_card('New Creators Arriving', 'Meet artists, makers, teachers, vendors, and storytellers joining the community.', 'Meet the Community', base_url('artist-alley/index.php'), 'users'); ?>
+      <?php gnm_action_card('Events Happening Soon', 'Build your convention schedule with panels, workshops, streams, and meetups.', 'See Upcoming Events', base_url('events/index.php'), 'calendar'); ?>
+      <?php gnm_action_card('Fresh Finds & Listings', 'Browse newly added products, collectibles, courses, and creator releases.', 'Start Exploring', base_url('explore.php'), 'spark'); ?>
+    </div>
+  </section>
+
+  <section class="gnm-home-section">
+    <?php gnm_section_header('Featured Companies', 'Explore Companies', base_url('company/index.php')); ?>
+    <div class="gnm-home-card-grid">
+      <?php foreach (array_slice($companies,0,4) as $item):
+        $href = !empty($item['slug']) ? base_url('company/view.php?slug=' . urlencode((string)$item['slug'])) : base_url('company/index.php');
+        home_media_card($item, $href, 'Company', 'users');
+      endforeach; ?>
+    </div>
+  </section>
+
+  <section class="gnm-home-section">
+    <?php gnm_section_header('Featured Brands', 'Explore Brands', base_url('brand/index.php')); ?>
+    <div class="gnm-home-card-grid">
+      <?php foreach (array_slice($brands,0,4) as $item):
+        $href = !empty($item['slug']) ? base_url('brand/view.php?slug=' . urlencode((string)$item['slug'])) : base_url('brand/index.php');
+        home_media_card($item, $href, 'Brand', 'star');
+      endforeach; ?>
+    </div>
+  </section>
+
+  <section class="gnm-home-newsletter">
+    <div><p class="gnm-eyebrow">STAY CONNECTED</p><h2>Never miss what is happening in the Multiverse.</h2><p>Get featured creators, new universes, upcoming panels, courses, collectibles, and convention discoveries delivered to you.</p></div>
+    <form action="<?= e(base_url('register.php')) ?>" method="get"><input type="email" name="email" placeholder="Enter your email address" aria-label="Email address"><button type="submit">Join Geek Nation</button></form>
+  </section>
+</div>
+<?php app_footer(); ?>

@@ -68,14 +68,102 @@ function user(): ?array {
 function require_auth(): void { if (!user()) { flash('error','Please sign in to continue.'); redirect('login.php'); } }
 function require_admin(): void { require_auth(); if ((user()['role'] ?? '') !== 'admin') { http_response_code(403); exit('Administrator access required.'); } }
 function app_header(string $title): void {
-    $u=user(); $full=e($title.' | '.config('app.name')); echo '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'.$full.'</title><link rel="stylesheet" href="'.e(base_url('styles.css')).'"></head><body><div class="space-bg"></div><header class="site-header"><a class="brand" href="'.e(base_url()).'"><img src="'.e(base_url('assets/geek-nation-multiverse-logo.png')).'" alt="Geek Nation Multiverse"></a><nav class="main-nav"><a href="'.e(base_url()).'">Home</a>';
-    if ($u) { echo '<a href="'.e(base_url('dashboard.php')).'">Dashboard</a><a href="'.e(base_url('company/index.php')).'">Companies</a><a href="'.e(base_url('brand/index.php')).'">Brands</a><a href="'.e(base_url('universe/index.php')).'">Universes</a><a href="'.e(base_url('booth/index.php')).'">Booths</a><a href="'.e(base_url('cart.php')).'">Cart ('.cart_count().')</a><a href="'.e(base_url('profile.php?u='.urlencode($u['username']))).'">Profile</a>'; if ($u['role']==='admin') echo '<a href="'.e(base_url('admin/users.php')).'">Admin</a><a href="'.e(base_url('admin/brands.php')).'">Brand Approvals</a><a href="'.e(base_url('admin/imports.php')).'">Import Center</a><a href="'.e(base_url('admin/universes.php')).'">Universe Admin</a><a href="'.e(base_url('admin/booths.php')).'">Booth Admin</a><a href="'.e(base_url('admin/developer-center.php')).'">Developer Center</a><a href="'.e(base_url('admin/invitations.php')).'">Invitations</a>'; }
-    echo '</nav><div class="header-actions">';
-    if ($u) echo '<span class="user-chip">'.e($u['display_name']).'</span><a class="button ghost" href="'.e(base_url('logout.php')).'">Sign Out</a>'; else echo '<a class="button ghost" href="'.e(base_url('login.php')).'">Sign In</a><a class="button primary" href="'.e(base_url('register.php')).'">Join</a>';
-    echo '</div></header><main class="app-shell">';
-    foreach (flashes() as $f) echo '<div class="alert '.e($f['type']).'">'.e($f['message']).'</div>';
+    $u = user();
+    $full = e($title . ' | ' . config('app.name'));
+    $cartCount = cart_count();
+
+    echo '<!doctype html><html lang="en"><head>';
+    echo '<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">';
+    echo '<title>' . $full . '</title>';
+    echo '<link rel="stylesheet" href="' . e(base_url('styles.css')) . '">';
+    echo '<link rel="stylesheet" href="' . e(base_url('assets/navigation-v10.css?v=10.5')) . '">';
+    echo '<link rel="stylesheet" href="' . e(base_url('assets/design-system-v10.css?v=10.5')) . '">';
+    echo '<link rel="stylesheet" href="' . e(base_url('assets/homepage-v10.5.css?v=10.5')) . '">';
+    echo '</head><body><div class="space-bg"></div>';
+
+    echo '<header class="gn-header" data-gn-header>';
+
+    // Tier 1: brand, public destinations, utilities/account.
+    echo '<div class="gn-header__primary">';
+    echo '<a class="gn-brand" href="' . e(base_url()) . '" aria-label="Geek Nation Multiverse home">';
+    echo '<img src="' . e(base_url('assets/geek-nation-multiverse-logo.png')) . '" alt="Geek Nation Multiverse">';
+    echo '</a>';
+
+    echo '<button class="gn-menu-button" type="button" aria-expanded="false" aria-controls="gn-public-nav" data-gn-menu-button>';
+    echo '<span class="gn-menu-button__icon" aria-hidden="true"></span><span>Menu</span></button>';
+
+    echo '<nav class="gn-public-nav" id="gn-public-nav" aria-label="Primary navigation" data-gn-public-nav>';
+    $publicLinks = [
+        ['Home', ''],
+        ['Explore', 'explore.php'],
+        ['Universes', 'universe/index.php'],
+        ['Booths', 'booth/index.php'],
+        ['Panels & Events', 'events/index.php'],
+        ['Artist Alley', 'artist-alley/index.php'],
+        ['Multiverse Academy', 'academy/index.php'],
+        ['Collectors Marketplace', 'collectors/index.php'],
+        ['About', 'about.php'],
+    ];
+    foreach ($publicLinks as [$label, $path]) {
+        echo '<a href="' . e(base_url($path)) . '">' . e($label) . '</a>';
+    }
+    echo '</nav>';
+
+    echo '<div class="gn-header-tools">';
+    echo '<a class="gn-tool-link" href="' . e(base_url('search.php')) . '">Search</a>';
+    echo '<a class="gn-tool-link" href="' . e(base_url('cart.php')) . '">Cart <span class="gn-cart-count">' . (int)$cartCount . '</span></a>';
+
+    if ($u) {
+        echo '<details class="gn-account">';
+        echo '<summary><span class="gn-account__label">' . e($u['display_name']) . '</span><span aria-hidden="true">▾</span></summary>';
+        echo '<div class="gn-account__menu">';
+        echo '<a href="' . e(base_url('profile.php?u=' . urlencode($u['username']))) . '">My Profile</a>';
+        echo '<a href="' . e(base_url('edit-profile.php')) . '">Edit Profile</a>';
+        if (($u['role'] ?? '') === 'admin') {
+            echo '<a href="' . e(base_url('admin/users.php')) . '">Administration</a>';
+        }
+        echo '<a href="' . e(base_url('logout.php')) . '">Sign Out</a>';
+        echo '</div></details>';
+    } else {
+        echo '<a class="gn-signin" href="' . e(base_url('login.php')) . '">Sign In</a>';
+        echo '<a class="gn-join" href="' . e(base_url('register.php')) . '">Join</a>';
+    }
+    echo '</div></div>';
+
+    // Tier 2: signed-in member shortcuts only.
+    if ($u) {
+        echo '<div class="gn-header__member">';
+        echo '<div class="gn-member-inner">';
+        echo '<span class="gn-member-title">My Multiverse</span>';
+        $memberLinks = [
+            ['Dashboard', 'dashboard.php'],
+            ['My Booths', 'booth/dashboard.php'],
+            ['My Events', 'events/dashboard.php'],
+            ['My Artist Page', 'artist-alley/dashboard.php'],
+            ['My Courses', 'academy/dashboard.php'],
+            ['My Collection', 'collectors/dashboard.php'],
+        ];
+        foreach ($memberLinks as [$label, $path]) {
+            echo '<a href="' . e(base_url($path)) . '">' . e($label) . '</a>';
+        }
+        if (($u['role'] ?? '') === 'admin') {
+            echo '<a class="gn-member-admin" href="' . e(base_url('admin/users.php')) . '">Administration</a>';
+        }
+        echo '</div></div>';
+    }
+
+    echo '</header>';
+    echo '<main class="app-shell">';
+    foreach (flashes() as $f) {
+        echo '<div class="alert ' . e($f['type']) . '">' . e($f['message']) . '</div>';
+    }
 }
-function app_footer(): void { echo '</main><footer class="site-footer app-footer"><div><strong>Geek Nation Multiverse</strong><p>Created by Marc Delsoin, Abdoul Ba, Trevor Rukwava, &amp; Sean Pisano.</p></div><div><p>Authors: Marc Delsoin, Abdoul Ba, Trevor Rukwava, &amp; Sean Pisano.</p></div></footer></body></html>'; }
+
+function app_footer(): void {
+    echo '</main><footer class="site-footer app-footer"><div><strong>Geek Nation Multiverse</strong><p>Created by Marc Delsoin, Abdoul Ba, Trevor Rukwava, &amp; Sean Pisano.</p></div><div><p>Authors: Marc Delsoin, Abdoul Ba, Trevor Rukwava, &amp; Sean Pisano.</p></div></footer>';
+    echo '<script src="' . e(base_url('assets/navigation-v10.js?v=10.5')) . '" defer></script>';
+    echo '</body></html>';
+}
 
 function run_sql_file(string $file): void {
     $sql = file_get_contents($file);
@@ -278,3 +366,65 @@ function save_booth_file(string $field,string $folder,int $boothId,array $extens
  if(empty($_FILES[$field]['name']))return null;$f=$_FILES[$field];if(($f['error']??UPLOAD_ERR_NO_FILE)!==UPLOAD_ERR_OK)throw new RuntimeException('File upload failed.');if(($f['size']??0)>10*1024*1024)throw new RuntimeException('Files must be 10 MB or smaller.');$ext=strtolower(pathinfo((string)$f['name'],PATHINFO_EXTENSION));if(!in_array($ext,$extensions,true))throw new RuntimeException('Unsupported file type.');$dir=GNM_ROOT.'/uploads/booths/'.$folder;if(!is_dir($dir)&&!mkdir($dir,0755,true))throw new RuntimeException('Could not create upload directory.');$name=$boothId.'-'.bin2hex(random_bytes(8)).'.'.$ext;if(!move_uploaded_file($f['tmp_name'],$dir.'/'.$name))throw new RuntimeException('Could not save file.');return 'uploads/booths/'.$folder.'/'.$name;
 }
 function record_booth_view(int $boothId): void { if(!booth_management_ready())return;$key=session_id()?:($_SERVER['REMOTE_ADDR']??'guest');$uid=user()['id']??null;try{$s=db()->prepare('INSERT IGNORE INTO booth_views(booth_id,viewer_user_id,session_key,viewed_on) VALUES(?,?,?,CURDATE())');$s->execute([$boothId,$uid,hash('sha256',$key)]);}catch(Throwable $e){} }
+
+function events_schema_ready(): bool { try { db()->query('SELECT 1 FROM events LIMIT 1'); db()->query('SELECT 1 FROM event_attendees LIMIT 1'); return true; } catch(Throwable $e){ return false; } }
+function event_type_options(): array { return ['panel'=>'Panel','workshop'=>'Workshop','signing'=>'Signing','meet_greet'=>'Meet & Greet','screening'=>'Screening','tournament'=>'Tournament','competition'=>'Competition','qa'=>'Q&A','cosplay_contest'=>'Cosplay Contest','meetup'=>'Meetup','livestream'=>'Livestream','watch_party'=>'Watch Party','discussion'=>'Discussion','ama'=>'AMA','product_launch'=>'Product Launch','sale'=>'Sale','demo'=>'Demo','showcase'=>'Showcase','class'=>'Class','webinar'=>'Webinar','training'=>'Training']; }
+function event_slug(string $title,?int $ignoreId=null): string { $base=strtolower(trim(preg_replace('/[^a-z0-9]+/i','-',$title),'-'))?:'event';$slug=$base;$i=2;while(true){$sql='SELECT COUNT(*) FROM events WHERE slug=?'.($ignoreId?' AND id<>?':'');$st=db()->prepare($sql);$args=[$slug];if($ignoreId)$args[]=$ignoreId;$st->execute($args);if(!(int)$st->fetchColumn())return $slug;$slug=$base.'-'.$i++;} }
+function event_by_slug(string $slug): ?array { $s=db()->prepare('SELECT e.*,u.display_name owner_name FROM events e JOIN users u ON u.id=e.owner_user_id WHERE e.slug=? LIMIT 1');$s->execute([$slug]);return $s->fetch()?:null; }
+function can_manage_event(array $event,?array $u=null): bool { $u=$u?:user();return $u && (($u['role']??'')==='admin'||(int)$event['owner_user_id']===(int)$u['id']); }
+function event_date_label(array $event): string { $start=strtotime((string)$event['starts_at']);$end=strtotime((string)$event['ends_at']);if(!$start||!$end)return '';if(date('Y-m-d',$start)===date('Y-m-d',$end))return date('M j, Y · g:i A',$start).'–'.date('g:i A',$end);return date('M j, Y · g:i A',$start).' – '.date('M j, Y · g:i A',$end); }
+function save_event_image(string $field,string $folder,int $eventId): ?string { return save_uploaded_image($field,'events/'.$folder,$eventId); }
+function event_speakers(int $eventId): array { $s=db()->prepare('SELECT * FROM event_speakers WHERE event_id=? ORDER BY sort_order,name');$s->execute([$eventId]);return $s->fetchAll(); }
+function event_relationships(int $eventId): array { $s=db()->prepare("SELECT r.*,CASE r.entity_type WHEN 'company' THEN (SELECT name FROM companies WHERE id=r.entity_id) WHEN 'brand' THEN (SELECT name FROM brands WHERE id=r.entity_id) WHEN 'booth' THEN (SELECT name FROM booths WHERE id=r.entity_id) WHEN 'universe' THEN (SELECT name FROM universes WHERE id=r.entity_id) END entity_name FROM event_relationships r WHERE r.event_id=? ORDER BY r.entity_type,entity_name");$s->execute([$eventId]);return $s->fetchAll(); }
+function event_relationship_choices(): array { $out=[];try{$out['company']=db()->query("SELECT id,name FROM companies WHERE status='approved' ORDER BY name")->fetchAll();}catch(Throwable $e){$out['company']=[];}try{$out['brand']=db()->query("SELECT id,name FROM brands WHERE status='approved' ORDER BY name")->fetchAll();}catch(Throwable $e){$out['brand']=[];}try{$out['booth']=db()->query("SELECT id,name FROM booths WHERE status='approved' ORDER BY name")->fetchAll();}catch(Throwable $e){$out['booth']=[];}try{$out['universe']=db()->query("SELECT id,name FROM universes WHERE status='approved' AND is_active=1 ORDER BY name")->fetchAll();}catch(Throwable $e){$out['universe']=[];}return $out; }
+function event_rsvp(int $eventId,int $userId,int $capacity=0): void { $count=(int)db()->query("SELECT COUNT(*) FROM event_attendees WHERE event_id=".$eventId." AND attendee_status IN ('registered','approved','checked_in')")->fetchColumn();$status=($capacity>0&&$count>=$capacity)?'waitlisted':'registered';db()->prepare("INSERT INTO event_attendees(event_id,user_id,attendee_status) VALUES(?,?,?) ON DUPLICATE KEY UPDATE attendee_status=VALUES(attendee_status),registered_at=CURRENT_TIMESTAMP")->execute([$eventId,$userId,$status]); }
+function record_event_view(int $eventId): void { $key=session_id()?:($_SERVER['REMOTE_ADDR']??'guest');$uid=user()['id']??null;try{$s=db()->prepare('INSERT IGNORE INTO event_views(event_id,viewer_user_id,session_key,viewed_on) VALUES(?,?,?,CURDATE())');$s->execute([$eventId,$uid,hash('sha256',$key)]);}catch(Throwable $e){} }
+
+function artist_alley_ready(): bool {
+    try { db()->query('SELECT 1 FROM artist_profiles LIMIT 1'); db()->query('SELECT 1 FROM artist_commission_requests LIMIT 1'); return true; }
+    catch (Throwable $e) { return false; }
+}
+function artist_slug(string $name, ?int $ignoreId=null): string {
+    $base=strtolower(trim(preg_replace('/[^a-z0-9]+/i','-',$name),'-')) ?: 'artist';
+    $slug=$base;$i=2;
+    while(true){$sql='SELECT COUNT(*) FROM artist_profiles WHERE slug=?'.($ignoreId?' AND id<>?':'');$s=db()->prepare($sql);$args=[$slug];if($ignoreId)$args[]=$ignoreId;$s->execute($args);if(!(int)$s->fetchColumn())return $slug;$slug=$base.'-'.$i++;}
+}
+function artist_by_slug(string $slug): ?array { $s=db()->prepare('SELECT a.*,u.display_name owner_name,u.username owner_username FROM artist_profiles a JOIN users u ON u.id=a.user_id WHERE a.slug=? LIMIT 1');$s->execute([$slug]);return $s->fetch()?:null; }
+function artist_by_id(int $id): ?array { $s=db()->prepare('SELECT a.*,u.display_name owner_name,u.username owner_username FROM artist_profiles a JOIN users u ON u.id=a.user_id WHERE a.id=? LIMIT 1');$s->execute([$id]);return $s->fetch()?:null; }
+function artist_for_user(int $userId): ?array { $s=db()->prepare('SELECT * FROM artist_profiles WHERE user_id=? LIMIT 1');$s->execute([$userId]);return $s->fetch()?:null; }
+function can_manage_artist(array $artist, ?array $u=null): bool { $u=$u?:user();return $u && (($u['role']??'')==='admin' || (int)$artist['user_id']===(int)$u['id']); }
+function artist_portfolio_types(): array { return ['artwork'=>'Artwork','comic'=>'Comic','photography'=>'Photography','video'=>'Video','music'=>'Music','writing'=>'Writing','model'=>'3D Model','cosplay'=>'Cosplay','other'=>'Other']; }
+function artist_portfolio(int $artistId,bool $publicOnly=true): array { $sql='SELECT * FROM artist_portfolio_items WHERE artist_id=?'.($publicOnly?'':'').' ORDER BY is_featured DESC,sort_order,id DESC';$s=db()->prepare($sql);$s->execute([$artistId]);return $s->fetchAll(); }
+function artist_services(int $artistId,bool $activeOnly=true): array { $sql='SELECT * FROM artist_commission_services WHERE artist_id=?'.($activeOnly?' AND is_active=1':'').' ORDER BY id DESC';$s=db()->prepare($sql);$s->execute([$artistId]);return $s->fetchAll(); }
+function artist_requests(int $artistId): array { $s=db()->prepare('SELECT r.*,u.display_name customer_name,s.title service_title FROM artist_commission_requests r JOIN users u ON u.id=r.customer_user_id LEFT JOIN artist_commission_services s ON s.id=r.service_id WHERE r.artist_id=? ORDER BY FIELD(r.status,\'submitted\',\'reviewing\',\'accepted\',\'in_progress\',\'proof\',\'completed\',\'declined\',\'cancelled\'),r.created_at DESC');$s->execute([$artistId]);return $s->fetchAll(); }
+function artist_followers(int $artistId): array { $s=db()->prepare('SELECT u.display_name,u.username,f.created_at FROM artist_follows f JOIN users u ON u.id=f.user_id WHERE f.artist_id=? ORDER BY f.created_at DESC');$s->execute([$artistId]);return $s->fetchAll(); }
+function artist_stats(int $artistId): array { $pdo=db();$counts=[];foreach(['portfolio'=>'artist_portfolio_items','services'=>'artist_commission_services','followers'=>'artist_follows'] as $key=>$table){$counts[$key]=(int)$pdo->query("SELECT COUNT(*) FROM {$table} WHERE artist_id=".$artistId)->fetchColumn();}$counts['requests']=(int)$pdo->query("SELECT COUNT(*) FROM artist_commission_requests WHERE artist_id=".$artistId." AND status NOT IN ('completed','declined','cancelled')")->fetchColumn();return $counts; }
+
+
+function academy_ready(): bool { try { db()->query('SELECT 1 FROM academy_courses LIMIT 1'); db()->query('SELECT 1 FROM academy_enrollments LIMIT 1'); return true; } catch(Throwable $e){ return false; } }
+function academy_levels(): array { return ['beginner'=>'Beginner','intermediate'=>'Intermediate','advanced'=>'Advanced','all_levels'=>'All Levels']; }
+function academy_formats(): array { return ['self_paced'=>'Self-Paced','live'=>'Live','hybrid'=>'Hybrid']; }
+function academy_lesson_types(): array { return ['video'=>'Video','article'=>'Article','download'=>'Download','quiz'=>'Quiz','live_session'=>'Live Session','assignment'=>'Assignment']; }
+function academy_slug(string $title,?int $ignoreId=null): string { $base=strtolower(trim(preg_replace('/[^a-z0-9]+/i','-',$title),'-'))?:'course';$slug=$base;$i=2;while(true){$sql='SELECT COUNT(*) FROM academy_courses WHERE slug=?'.($ignoreId?' AND id<>?':'');$st=db()->prepare($sql);$args=[$slug];if($ignoreId)$args[]=$ignoreId;$st->execute($args);if(!(int)$st->fetchColumn())return $slug;$slug=$base.'-'.$i++;} }
+function academy_by_slug(string $slug): ?array { $s=db()->prepare('SELECT c.*,u.display_name owner_name,u.username owner_username FROM academy_courses c JOIN users u ON u.id=c.owner_user_id WHERE c.slug=? LIMIT 1');$s->execute([$slug]);return $s->fetch()?:null; }
+function academy_by_id(int $id): ?array { $s=db()->prepare('SELECT c.*,u.display_name owner_name,u.username owner_username FROM academy_courses c JOIN users u ON u.id=c.owner_user_id WHERE c.id=? LIMIT 1');$s->execute([$id]);return $s->fetch()?:null; }
+function can_manage_course(array $course,?array $u=null): bool { $u=$u?:user();if(!$u)return false;if(($u['role']??'')==='admin'||(int)$course['owner_user_id']===(int)$u['id'])return true;$s=db()->prepare('SELECT COUNT(*) FROM academy_instructors WHERE course_id=? AND user_id=?');$s->execute([$course['id'],$u['id']]);return (bool)$s->fetchColumn(); }
+function academy_lessons(int $courseId): array { $s=db()->prepare('SELECT * FROM academy_lessons WHERE course_id=? ORDER BY sort_order,id');$s->execute([$courseId]);return $s->fetchAll(); }
+function academy_instructors(int $courseId): array { $s=db()->prepare("SELECT i.*,u.display_name,u.username,u.email FROM academy_instructors i JOIN users u ON u.id=i.user_id WHERE i.course_id=? ORDER BY i.sort_order,FIELD(i.role,'lead','instructor','assistant','guest'),u.display_name");$s->execute([$courseId]);return $s->fetchAll(); }
+function academy_students(int $courseId): array { $s=db()->prepare('SELECT e.*,u.display_name,u.username,u.email FROM academy_enrollments e JOIN users u ON u.id=e.user_id WHERE e.course_id=? ORDER BY e.enrolled_at DESC');$s->execute([$courseId]);return $s->fetchAll(); }
+function academy_enrollment(int $courseId,int $userId): ?array { $s=db()->prepare('SELECT * FROM academy_enrollments WHERE course_id=? AND user_id=? LIMIT 1');$s->execute([$courseId,$userId]);return $s->fetch()?:null; }
+function academy_enroll(int $courseId,int $userId,int $capacity=0): void { $count=(int)db()->query("SELECT COUNT(*) FROM academy_enrollments WHERE course_id=".$courseId." AND status IN ('enrolled','in_progress','completed')")->fetchColumn();$status=($capacity>0&&$count>=$capacity)?'waitlisted':'enrolled';db()->prepare('INSERT INTO academy_enrollments(course_id,user_id,status) VALUES(?,?,?) ON DUPLICATE KEY UPDATE status=VALUES(status)')->execute([$courseId,$userId,$status]); }
+function academy_completed_lesson_ids(int $courseId,int $userId): array { $s=db()->prepare('SELECT p.lesson_id FROM academy_lesson_progress p JOIN academy_lessons l ON l.id=p.lesson_id WHERE l.course_id=? AND p.user_id=?');$s->execute([$courseId,$userId]);return array_map('intval',$s->fetchAll(PDO::FETCH_COLUMN)); }
+function academy_complete_lesson(int $lessonId,int $courseId,int $userId): void { $s=db()->prepare('SELECT COUNT(*) FROM academy_lessons WHERE id=? AND course_id=?');$s->execute([$lessonId,$courseId]);if(!(int)$s->fetchColumn())throw new RuntimeException('Lesson not found.');db()->prepare('INSERT IGNORE INTO academy_lesson_progress(lesson_id,user_id) VALUES(?,?)')->execute([$lessonId,$userId]);$total=(int)db()->query('SELECT COUNT(*) FROM academy_lessons WHERE course_id='.$courseId)->fetchColumn();$done=count(academy_completed_lesson_ids($courseId,$userId));$progress=$total?min(100,(int)round($done/$total*100)):0;$status=$progress>=100?'completed':($progress>0?'in_progress':'enrolled');db()->prepare('UPDATE academy_enrollments SET progress_percent=?,status=?,completed_at=? WHERE course_id=? AND user_id=?')->execute([$progress,$status,$status==='completed'?date('Y-m-d H:i:s'):null,$courseId,$userId]); }
+function academy_stats(int $courseId): array { $pdo=db();$lessons=(int)$pdo->query('SELECT COUNT(*) FROM academy_lessons WHERE course_id='.$courseId)->fetchColumn();$students=(int)$pdo->query("SELECT COUNT(*) FROM academy_enrollments WHERE course_id={$courseId} AND status<>'cancelled'")->fetchColumn();$completed=(int)$pdo->query("SELECT COUNT(*) FROM academy_enrollments WHERE course_id={$courseId} AND status='completed'")->fetchColumn();$average=(int)$pdo->query("SELECT COALESCE(ROUND(AVG(progress_percent)),0) FROM academy_enrollments WHERE course_id={$courseId} AND status<>'cancelled'")->fetchColumn();return compact('lessons','students','completed','average'); }
+function academy_datetime_local(?string $value): string { return $value?date('Y-m-d\TH:i',strtotime($value)):''; }
+
+function collector_marketplace_ready(): bool { try{db()->query('SELECT 1 FROM collector_profiles LIMIT 1');return true;}catch(Throwable $e){return false;} }
+function collector_categories(): array { return ['comics'=>'Comics','trading_cards'=>'Trading Cards','action_figures'=>'Action Figures','statues'=>'Statues','toys'=>'Toys','games'=>'Games','movies'=>'Movies','books'=>'Books','posters'=>'Posters','props'=>'Props','autographs'=>'Autographs','memorabilia'=>'Memorabilia','other'=>'Other']; }
+function collector_listing_types(): array { return ['sale'=>'For Sale','trade'=>'For Trade','wanted'=>'Wanted','showcase'=>'Showcase Only']; }
+function collector_slug(string $name,int $ignore=0): string {$slug=strtolower(trim(preg_replace('/[^a-z0-9]+/i','-',$name),'-'))?:'collector';$base=$slug;$i=2;$s=db()->prepare('SELECT COUNT(*) FROM collector_profiles WHERE slug=? AND id<>?');while(true){$s->execute([$slug,$ignore]);if(!(int)$s->fetchColumn())return $slug;$slug=$base.'-'.$i++;}}
+function collector_item_slug(string $name,int $ignore=0): string {$slug=strtolower(trim(preg_replace('/[^a-z0-9]+/i','-',$name),'-'))?:'item';$base=$slug;$i=2;$s=db()->prepare('SELECT COUNT(*) FROM collector_items WHERE slug=? AND id<>?');while(true){$s->execute([$slug,$ignore]);if(!(int)$s->fetchColumn())return $slug;$slug=$base.'-'.$i++;}}
+function collector_profile_by_user(int $uid): ?array {$s=db()->prepare('SELECT cp.*,u.display_name,u.username FROM collector_profiles cp JOIN users u ON u.id=cp.user_id WHERE cp.user_id=?');$s->execute([$uid]);return $s->fetch()?:null;}
+function collector_profile_by_slug(string $slug): ?array {$s=db()->prepare('SELECT cp.*,u.display_name,u.username FROM collector_profiles cp JOIN users u ON u.id=cp.user_id WHERE cp.slug=?');$s->execute([$slug]);return $s->fetch()?:null;}
+function collector_item_by_slug(string $slug): ?array {$s=db()->prepare('SELECT i.*,cp.shop_name,cp.slug collector_slug,cp.user_id seller_user_id,u.display_name seller_name FROM collector_items i JOIN collector_profiles cp ON cp.id=i.collector_id JOIN users u ON u.id=cp.user_id WHERE i.slug=?');$s->execute([$slug]);return $s->fetch()?:null;}
+function can_manage_collector(array $p,?array $u=null): bool {$u=$u?:user();return $u&&(($u['role']??'')==='admin'||(int)$u['id']===(int)$p['user_id']);}

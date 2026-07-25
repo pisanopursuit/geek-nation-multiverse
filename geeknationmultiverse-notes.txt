@@ -1,0 +1,31 @@
+TodayIsJuly19th#2026ItIsAVeryNiceDay
+
+geek-nation-multiverse
+
+	
+marc.delsoin@pursuit.org
+	
+sean.pisano@pursuit.org
+	
+abdoul.ba@pursuit.org
+
+trevor.rukwava@pursuit.org
+
+
+
+Marc Delsoin, Abdoul Ba, Sean Pisano, Trevor Rukwava
+
+
+
+
+
+git add .
+git commit -m "Dashboard admin created and fuctions so far"
+git push
+
+
+Spec kit and open kit.
+
+git add .
+git commit -m "git ignore update"
+git push

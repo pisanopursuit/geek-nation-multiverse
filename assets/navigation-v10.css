@@ -1,0 +1,251 @@
+/* Geek Nation Multiverse — clean two-tier navigation, isolated from legacy header rules */
+.gn-header,
+.gn-header * { box-sizing: border-box; }
+
+.gn-header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  width: 100%;
+  color: #f7f7fb;
+  background: rgba(5, 5, 11, .96);
+  border-bottom: 1px solid rgba(255,255,255,.12);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.gn-header__primary {
+  width: 100%;
+  min-height: 78px;
+  padding: 8px clamp(18px, 3vw, 54px);
+  display: grid;
+  grid-template-columns: 70px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: clamp(18px, 2vw, 34px);
+}
+
+.gn-brand {
+  display: block;
+  width: 70px;
+  height: 60px;
+  overflow: hidden;
+  border-radius: 8px;
+  flex: 0 0 auto;
+}
+
+.gn-brand img {
+  display: block !important;
+  width: 70px !important;
+  height: 60px !important;
+  max-width: 70px !important;
+  max-height: 60px !important;
+  object-fit: cover !important;
+  object-position: center !important;
+}
+
+.gn-public-nav {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(13px, 1.35vw, 25px);
+}
+
+.gn-public-nav a,
+.gn-header-tools a,
+.gn-member-inner a,
+.gn-account__menu a {
+  color: #b9bdcf;
+  text-decoration: none;
+  font-weight: 750;
+  line-height: 1.2;
+}
+
+.gn-public-nav a {
+  font-size: clamp(.78rem, .83vw, .96rem);
+  white-space: nowrap;
+}
+
+.gn-public-nav a:hover,
+.gn-header-tools a:hover,
+.gn-member-inner a:hover,
+.gn-account__menu a:hover { color: #fff; }
+
+.gn-header-tools {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  white-space: nowrap;
+}
+
+.gn-tool-link,
+.gn-signin {
+  font-size: .88rem;
+}
+
+.gn-cart-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 21px;
+  height: 21px;
+  margin-left: 3px;
+  padding: 0 6px;
+  border-radius: 999px;
+  color: #061018;
+  background: #27d7ff;
+  font-size: .72rem;
+  font-weight: 900;
+}
+
+.gn-join {
+  padding: 9px 14px;
+  border-radius: 10px;
+  color: #fff !important;
+  background: linear-gradient(135deg, #27d7ff, #8b43ff 58%, #ff4db8);
+}
+
+.gn-account { position: relative; }
+.gn-account summary {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  max-width: 190px;
+  padding: 9px 11px;
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 10px;
+  cursor: pointer;
+  list-style: none;
+  background: rgba(255,255,255,.04);
+}
+.gn-account summary::-webkit-details-marker { display: none; }
+.gn-account__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gn-account__menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 1010;
+  width: 210px;
+  padding: 8px;
+  display: grid;
+  gap: 3px;
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 13px;
+  background: #10111e;
+  box-shadow: 0 20px 55px rgba(0,0,0,.55);
+}
+.gn-account__menu a { padding: 10px 11px; border-radius: 8px; font-size: .88rem; }
+.gn-account__menu a:hover { background: rgba(255,255,255,.07); }
+
+.gn-header__member {
+  width: 100%;
+  border-top: 1px solid rgba(255,255,255,.08);
+  background: linear-gradient(90deg, rgba(39,215,255,.075), rgba(139,67,255,.075), rgba(255,77,184,.07));
+}
+
+.gn-member-inner {
+  min-height: 44px;
+  padding: 0 clamp(18px, 3vw, 54px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(16px, 2vw, 30px);
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.gn-member-title {
+  color: #27d7ff;
+  font-size: .72rem;
+  font-weight: 900;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.gn-member-inner a { font-size: .84rem; white-space: nowrap; }
+.gn-member-admin { color: #ff7fd0 !important; }
+
+.gn-menu-button {
+  display: none;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 12px;
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: 10px;
+  color: #fff;
+  background: rgba(255,255,255,.04);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+.gn-menu-button__icon,
+.gn-menu-button__icon::before,
+.gn-menu-button__icon::after {
+  display: block;
+  width: 19px;
+  height: 2px;
+  border-radius: 99px;
+  background: currentColor;
+}
+.gn-menu-button__icon { position: relative; }
+.gn-menu-button__icon::before,
+.gn-menu-button__icon::after { content: ""; position: absolute; left: 0; }
+.gn-menu-button__icon::before { top: -6px; }
+.gn-menu-button__icon::after { top: 6px; }
+
+@media (max-width: 1480px) {
+  .gn-header__primary { grid-template-columns: 70px auto 1fr; }
+  .gn-menu-button { display: inline-flex; }
+  .gn-public-nav {
+    display: none;
+    grid-column: 1 / -1;
+    width: 100%;
+    padding: 12px 0 8px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 7px;
+  }
+  .gn-public-nav.is-open { display: grid; }
+  .gn-public-nav a {
+    padding: 10px 12px;
+    border-radius: 9px;
+    background: rgba(255,255,255,.035);
+  }
+  .gn-header-tools { margin-left: auto; }
+}
+
+@media (max-width: 760px) {
+  .gn-header__primary {
+    min-height: 68px;
+    grid-template-columns: 58px auto 1fr;
+    gap: 10px;
+    padding: 6px 14px;
+  }
+  .gn-brand,
+  .gn-brand img {
+    width: 58px !important;
+    max-width: 58px !important;
+    height: 50px !important;
+    max-height: 50px !important;
+  }
+  .gn-menu-button span:last-child { display: none; }
+  .gn-public-nav { grid-template-columns: 1fr; }
+  .gn-header-tools { gap: 8px; }
+  .gn-tool-link { font-size: 0; }
+  .gn-tool-link:first-child::after { content: "Search"; font-size: .82rem; }
+  .gn-tool-link:nth-child(2) { font-size: .82rem; }
+  .gn-account summary { max-width: 120px; padding: 8px 9px; }
+  .gn-account__label { max-width: 82px; }
+  .gn-join { display: none; }
+  .gn-member-inner { justify-content: flex-start; padding: 0 14px; gap: 21px; }
+  .gn-member-title { position: sticky; left: 0; padding-right: 8px; background: #0c1220; }
+}
+
+@media (max-width: 480px) {
+  .gn-header-tools .gn-tool-link:first-child { display: none; }
+  .gn-account summary { max-width: 92px; }
+  .gn-account__label { max-width: 58px; }
+}

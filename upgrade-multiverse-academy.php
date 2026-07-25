@@ -1,0 +1,3 @@
+<?php require __DIR__.'/includes/bootstrap.php';require_admin();
+if($_SERVER['REQUEST_METHOD']==='POST'){verify_csrf();try{run_sql_file(__DIR__.'/database/multiverse-academy-v8.sql');flash('success','Multiverse Academy installed successfully.');redirect('dashboard.php');}catch(Throwable $e){flash('error',$e->getMessage());}}
+app_header('Install Multiverse Academy');?><section class="form-card"><p class="eyebrow">VERSION 8</p><h1>Install Multiverse Academy</h1><p>This installs courses, lessons, instructors, enrollment, learner progress, and administration.</p><form method="post"><?=csrf_field()?><button class="button primary">Install Multiverse Academy</button></form></section><?php app_footer();

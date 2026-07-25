@@ -23,4 +23,5 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
 require_once GNM_ROOT . '/includes/functions.php';
+require_once GNM_ROOT . '/includes/components.php';
 require_once GNM_ROOT . '/includes/mailer.php';
