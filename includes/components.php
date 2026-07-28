@@ -159,3 +159,29 @@ function gnm_filter_bar(array $filters, string $action = ''): void {
     }
     echo '<button class="gnm-button gnm-button--primary" type="submit"><span>Apply Filters</span>' . gnm_icon('arrow') . '</button></form>';
 }
+
+
+/** Version 10.7: safe cross-module discovery helpers. */
+function gnm_safe_rows(string $sql, array $params = []): array {
+    try {
+        $statement = db()->prepare($sql);
+        $statement->execute($params);
+        return $statement->fetchAll() ?: [];
+    } catch (Throwable $e) {
+        return [];
+    }
+}
+
+function gnm_related_section(string $title, string $exploreLabel, string $exploreHref, array $items, string $emptyMessage = ''): void {
+    if (!$items && $emptyMessage === '') return;
+    echo '<section class="gnm-related-section">';
+    gnm_section_header($title, $exploreLabel, $exploreHref);
+    if ($items) {
+        echo '<div class="gnm-grid gnm-grid--auto">';
+        foreach ($items as $item) gnm_card($item);
+        echo '</div>';
+    } else {
+        echo '<p class="gnm-related-empty">' . e($emptyMessage) . '</p>';
+    }
+    echo '</section>';
+}

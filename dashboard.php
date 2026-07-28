@@ -83,7 +83,7 @@ echo '<link rel="stylesheet" href="'.e(base_url('assets/dashboard-v10.6.css?v=10
 
 <section class="gn-dash-panel"><div class="gn-dash-panel__head"><h2>Account</h2></div><div class="gn-widget-list"><div class="gn-widget-row"><div class="gn-widget-row__icon">👤</div><div><strong><?=e($u['username'])?></strong><small><?=e($u['email'])?></small></div><span class="gn-status gn-status--good"><?=e($u['role'])?></span></div></div></section>
 
-<?php if(($u['role']??'')==='admin'):?><section class="gn-dash-panel gn-admin-panel"><div class="gn-dash-panel__head"><h2>Administration</h2><a href="<?=e(base_url('admin/users.php'))?>">Open →</a></div><div class="gn-action-grid" style="grid-template-columns:1fr 1fr"><a class="gn-action" href="<?=e(base_url('admin/users.php'))?>"><span class="gn-action__icon">🛡️</span><strong>Users</strong><small>Accounts and permissions</small></a><a class="gn-action" href="<?=e(base_url('admin/imports.php'))?>"><span class="gn-action__icon">📥</span><strong>Imports</strong><small>Platform data center</small></a></div></section><?php endif?>
+<?php if(($u['role']??'')==='admin'):?><section class="gn-dash-panel gn-admin-panel"><div class="gn-dash-panel__head"><h2>Administration</h2><a href="<?=e(base_url('admin/index.php'))?>">Open →</a></div><div class="gn-action-grid" style="grid-template-columns:1fr 1fr"><a class="gn-action" href="<?=e(base_url('admin/users.php'))?>"><span class="gn-action__icon">🛡️</span><strong>Users</strong><small>Accounts and permissions</small></a><a class="gn-action" href="<?=e(base_url('admin/imports.php'))?>"><span class="gn-action__icon">📥</span><strong>Imports</strong><small>Platform data center</small></a></div></section><?php endif?>
 </aside>
 </div>
 </main>

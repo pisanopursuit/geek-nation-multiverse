@@ -10,6 +10,40 @@ function config(string $key, mixed $default = null): mixed {
     }
     return $value;
 }
+
+function platform_settings_schema_ready(): bool {
+    try { db()->query('SELECT 1 FROM platform_settings LIMIT 1'); return true; }
+    catch (Throwable $e) { return false; }
+}
+function platform_settings_all(): array {
+    static $settings = null;
+    if (is_array($settings)) return $settings;
+    $settings = [];
+    if (!platform_settings_schema_ready()) return $settings;
+    try {
+        foreach (db()->query('SELECT setting_key, setting_value FROM platform_settings')->fetchAll() as $row) {
+            $settings[(string)$row['setting_key']] = (string)($row['setting_value'] ?? '');
+        }
+    } catch (Throwable $e) {}
+    return $settings;
+}
+function clear_platform_settings_cache(): void {
+    // Settings are reloaded on the next request. This function documents that boundary.
+}
+function site_setting(string $key, mixed $default = null): mixed {
+    $settings = platform_settings_all();
+    return array_key_exists($key, $settings) ? $settings[$key] : $default;
+}
+function feature_enabled(string $feature): bool {
+    return (string)site_setting('feature_' . $feature, '1') === '1';
+}
+function site_asset_url(string $path, string $fallback = ''): string {
+    $path = trim($path);
+    if ($path === '') $path = $fallback;
+    if (preg_match('#^https?://#i', $path)) return $path;
+    return base_url($path);
+}
+
 function db(): PDO {
     static $pdo;
     if ($pdo instanceof PDO) return $pdo;
@@ -69,7 +103,9 @@ function require_auth(): void { if (!user()) { flash('error','Please sign in to 
 function require_admin(): void { require_auth(); if ((user()['role'] ?? '') !== 'admin') { http_response_code(403); exit('Administrator access required.'); } }
 function app_header(string $title): void {
     $u = user();
-    $full = e($title . ' | ' . config('app.name'));
+    $siteName = (string)site_setting('site_name', config('app.name'));
+    $titleSuffix = (string)site_setting('seo_title_suffix', $siteName);
+    $full = e($title . ' | ' . $titleSuffix);
     $cartCount = cart_count();
 
     echo '<!doctype html><html lang="en"><head>';
@@ -79,14 +115,25 @@ function app_header(string $title): void {
     echo '<link rel="stylesheet" href="' . e(base_url('assets/navigation-v10.css?v=10.5')) . '">';
     echo '<link rel="stylesheet" href="' . e(base_url('assets/design-system-v10.css?v=10.5')) . '">';
     echo '<link rel="stylesheet" href="' . e(base_url('assets/homepage-v10.5.css?v=10.5')) . '">';
+    $metaDescription = (string)site_setting('seo_default_description', 'Explore Geek Nation Multiverse.');
+    echo '<meta name="description" content="' . e($metaDescription) . '">';
+    $favicon = trim((string)site_setting('favicon_path', ''));
+    if ($favicon !== '') echo '<link rel="icon" href="' . e(site_asset_url($favicon)) . '">';
     echo '</head><body><div class="space-bg"></div>';
+
+    if ((string)site_setting('maintenance_mode', '0') === '1' && (!$u || ($u['role'] ?? '') !== 'admin')) {
+        http_response_code(503);
+        echo '<main class="auth-page"><section class="auth-card"><p class="eyebrow">MAINTENANCE MODE</p><h1>' . e($siteName) . '</h1><p>' . e((string)site_setting('maintenance_message', 'Please check back shortly.')) . '</p></section></main>';
+        echo '</body></html>';
+        exit;
+    }
 
     echo '<header class="gn-header" data-gn-header>';
 
     // Tier 1: brand, public destinations, utilities/account.
     echo '<div class="gn-header__primary">';
     echo '<a class="gn-brand" href="' . e(base_url()) . '" aria-label="Geek Nation Multiverse home">';
-    echo '<img src="' . e(base_url('assets/geek-nation-multiverse-logo.png')) . '" alt="Geek Nation Multiverse">';
+    echo '<img src="' . e(site_asset_url((string)site_setting('logo_path', ''), 'assets/geek-nation-multiverse-logo.png')) . '" alt="' . e($siteName) . '">';
     echo '</a>';
 
     echo '<button class="gn-menu-button" type="button" aria-expanded="false" aria-controls="gn-public-nav" data-gn-menu-button>';
@@ -94,17 +141,18 @@ function app_header(string $title): void {
 
     echo '<nav class="gn-public-nav" id="gn-public-nav" aria-label="Primary navigation" data-gn-public-nav>';
     $publicLinks = [
-        ['Home', ''],
-        ['Explore', 'explore.php'],
-        ['Universes', 'universe/index.php'],
-        ['Booths', 'booth/index.php'],
-        ['Panels & Events', 'events/index.php'],
-        ['Artist Alley', 'artist-alley/index.php'],
-        ['Multiverse Academy', 'academy/index.php'],
-        ['Collectors Marketplace', 'collectors/index.php'],
-        ['About', 'about.php'],
+        ['Home', '', null],
+        ['Explore', 'explore.php', null],
+        ['Universes', 'universe/index.php', 'universes'],
+        ['Booths', 'booth/index.php', 'booths'],
+        ['Panels & Events', 'events/index.php', 'events'],
+        ['Artist Alley', 'artist-alley/index.php', 'artists'],
+        ['Multiverse Academy', 'academy/index.php', 'academy'],
+        ['Collectors Marketplace', 'collectors/index.php', 'collectors'],
+        ['About', 'about.php', null],
     ];
-    foreach ($publicLinks as [$label, $path]) {
+    foreach ($publicLinks as [$label, $path, $feature]) {
+        if ($feature !== null && !feature_enabled($feature)) continue;
         echo '<a href="' . e(base_url($path)) . '">' . e($label) . '</a>';
     }
     echo '</nav>';
@@ -120,13 +168,13 @@ function app_header(string $title): void {
         echo '<a href="' . e(base_url('profile.php?u=' . urlencode($u['username']))) . '">My Profile</a>';
         echo '<a href="' . e(base_url('edit-profile.php')) . '">Edit Profile</a>';
         if (($u['role'] ?? '') === 'admin') {
-            echo '<a href="' . e(base_url('admin/users.php')) . '">Administration</a>';
+            echo '<a href="' . e(base_url('admin/index.php')) . '">Administration</a>';
         }
         echo '<a href="' . e(base_url('logout.php')) . '">Sign Out</a>';
         echo '</div></details>';
     } else {
         echo '<a class="gn-signin" href="' . e(base_url('login.php')) . '">Sign In</a>';
-        echo '<a class="gn-join" href="' . e(base_url('register.php')) . '">Join</a>';
+        if ((string)site_setting('registration_enabled', '1') === '1') echo '<a class="gn-join" href="' . e(base_url('register.php')) . '">Join</a>';
     }
     echo '</div></div>';
 
@@ -136,18 +184,22 @@ function app_header(string $title): void {
         echo '<div class="gn-member-inner">';
         echo '<span class="gn-member-title">My Multiverse</span>';
         $memberLinks = [
-            ['Dashboard', 'dashboard.php'],
-            ['My Booths', 'booth/dashboard.php'],
-            ['My Events', 'events/dashboard.php'],
-            ['My Artist Page', 'artist-alley/dashboard.php'],
-            ['My Courses', 'academy/dashboard.php'],
-            ['My Collection', 'collectors/dashboard.php'],
+            ['Dashboard', 'dashboard.php', null],
+            ['My Booths', 'booth/dashboard.php', 'booths'],
+            ['My Events', 'events/dashboard.php', 'events'],
+            ['My Artist Page', 'artist-alley/dashboard.php', 'artists'],
+            ['My Courses', 'academy/dashboard.php', 'academy'],
+            ['My Collection', 'collectors/dashboard.php', 'collectors'],
         ];
-        foreach ($memberLinks as [$label, $path]) {
+        foreach ($memberLinks as [$label, $path, $feature]) {
+            if ($feature !== null && !feature_enabled($feature)) continue;
             echo '<a href="' . e(base_url($path)) . '">' . e($label) . '</a>';
         }
+        if (feature_enabled('universes')) {
+            echo '<a href="' . e(base_url('universe/my.php')) . '">My Universes</a>';
+        }
         if (($u['role'] ?? '') === 'admin') {
-            echo '<a class="gn-member-admin" href="' . e(base_url('admin/users.php')) . '">Administration</a>';
+            echo '<a class="gn-member-admin" href="' . e(base_url('admin/index.php')) . '">Administration</a>';
         }
         echo '</div></div>';
     }
@@ -160,7 +212,9 @@ function app_header(string $title): void {
 }
 
 function app_footer(): void {
-    echo '</main><footer class="site-footer app-footer"><div><strong>Geek Nation Multiverse</strong><p>Created by Marc Delsoin, Abdoul Ba, Trevor Rukwava, &amp; Sean Pisano.</p></div><div><p>Authors: Marc Delsoin, Abdoul Ba, Trevor Rukwava, &amp; Sean Pisano.</p></div></footer>';
+    $siteName = (string)site_setting('site_name', config('app.name'));
+    $credit = (string)site_setting('footer_credit', 'Created by Marc Delsoin, Abdoul Ba, Trevor Rukwava, & Sean Pisano.');
+    echo '</main><footer class="site-footer app-footer"><div><strong>' . e($siteName) . '</strong><p>' . e($credit) . '</p></div><div><p>' . e((string)site_setting('site_tagline', 'Every story. Every fan. One place.')) . '</p></div></footer>';
     echo '<script src="' . e(base_url('assets/navigation-v10.js?v=10.5')) . '" defer></script>';
     echo '</body></html>';
 }

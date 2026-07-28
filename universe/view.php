@@ -120,4 +120,14 @@ list.addEventListener('click',async e=>{const id=e.target.dataset.delete;if(!id)
 pop.addEventListener('click',()=>{box.classList.toggle('chat-popped');pop.textContent=box.classList.contains('chat-popped')?'×':'↗';pop.title=box.classList.contains('chat-popped')?'Close pop-out':'Pop out chat';if(box.classList.contains('chat-popped'))list.scrollTop=list.scrollHeight;});
 load();setInterval(load,4000);})();
 </script><?php endif?>
+<?php
+$relatedItems=[];
+foreach(gnm_safe_rows("SELECT b.name,b.slug,b.tagline,b.logo_path,b.banner_path FROM booth_universes bu JOIN booths b ON b.id=bu.booth_id WHERE bu.universe_id=? AND b.status='approved' ORDER BY b.is_featured DESC,b.updated_at DESC LIMIT 4",[(int)$universe['id']]) as $row){
+    $relatedItems[]=['title'=>$row['name'],'description'=>$row['tagline']?:'Visit this booth in the universe.','href'=>base_url('booth/view.php?slug='.urlencode($row['slug'])),'image'=>base_url($row['banner_path']?:$row['logo_path']?:'assets/geek-nation-multiverse-logo.png'),'eyebrow'=>'BOOTH'];
+}
+foreach(gnm_safe_rows("SELECT e.title,e.slug,e.subtitle,e.thumbnail_path,e.banner_path,e.starts_at FROM event_relationships er JOIN events e ON e.id=er.event_id WHERE er.entity_type='universe' AND er.entity_id=? AND e.status='approved' AND e.visibility='public' ORDER BY e.starts_at ASC LIMIT 4",[(int)$universe['id']]) as $row){
+    $relatedItems[]=['title'=>$row['title'],'description'=>$row['subtitle']?:date('M j, Y · g:i A',strtotime($row['starts_at'])),'href'=>base_url('events/view.php?slug='.urlencode($row['slug'])),'image'=>base_url($row['thumbnail_path']?:$row['banner_path']?:'assets/geek-nation-multiverse-logo.png'),'eyebrow'=>'EVENT'];
+}
+gnm_related_section('More from this Universe','Explore the Multiverse',base_url('explore.php'),array_slice($relatedItems,0,8),'Related booths and events will appear here as they are connected to this universe.');
+?>
 <?php app_footer();

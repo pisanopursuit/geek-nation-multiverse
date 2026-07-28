@@ -127,6 +127,8 @@ $companies = $companies ?: $fallbacks['companies'];
 $brands = $brands ?: $fallbacks['brands'];
 
 app_header('Home');
+$homeAnnouncement = trim((string)site_setting('homepage_announcement', ''));
+$homeAnnouncementUrl = trim((string)site_setting('homepage_announcement_url', ''));
 ?>
 <div class="gnm-home">
   <section class="gnm-feature-hero">

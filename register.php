@@ -1,6 +1,12 @@
 <?php
 require __DIR__.'/includes/bootstrap.php';
 if(user()) redirect('dashboard.php');
+if ((string)site_setting('registration_enabled', '1') !== '1') {
+    app_header('Registration Closed');
+    echo '<section class="auth-page"><div class="auth-card"><p class="eyebrow">REGISTRATION</p><h1>Registration is currently closed</h1><p>Please check back later or contact an administrator.</p><a class="button ghost" href="' . e(base_url()) . '">Return Home</a></div></section>';
+    app_footer();
+    exit;
+}
 $errors=[];
 if($_SERVER['REQUEST_METHOD']==='POST'){
  verify_csrf();
