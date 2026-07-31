@@ -1,0 +1,43 @@
+# Geek Nation Multiverse
+
+## Problem
+In-person fan conventions are occasional, expensive to travel to, and limited to whoever can make it to that city that weekend. Fans, creators, artists, vendors, collectors, companies, and brands are left with no single, always-open place to find each other, run their storefronts, host panels, or grow their communities between events.
+
+## Solution
+Geek Nation Multiverse is "the permanent online convention" — a year-round platform that connects fans, creators, artists, vendors, companies, brands, and communities through a shared multiverse of fandoms.
+
+Key features:
+- **Universes** — fandom communities members can create, join, and follow
+- **Artist Alley** — creator storefronts
+- **Booth Marketplace** & **Collector Marketplace** — vendor and collector commerce
+- **Panels & Events**
+- **Multiverse Academy** — classes and courses
+- **Companies & Brands** — verified profiles with a submission and approval workflow
+- **User Identity** — multi-step onboarding, public/member/private profiles, avatars and banners
+- **Administration & Moderation** — approval queues, content review, and platform settings
+
+## Tech Stack
+- Frontend: Server-rendered PHP views with HTML5, CSS3, and vanilla JavaScript
+- Backend: PHP
+- Database: MySQL, hosted on IONOS
+- Deployment: IONOS shared hosting at [geeknationmultiverse.com](https://geeknationmultiverse.com)
+
+## Screenshot
+![App Screenshot](./screenshot.png)
+
+## Setup Instructions
+1. Clone the repo: `git clone https://github.com/pisanopursuit/geek-nation-multiverse.git`
+2. Point a PHP 8+ server at the project root, e.g. `php -S localhost:8000` — there are no npm/Composer dependencies to install.
+3. `install.php` is wired to the production IONOS MySQL database and SMTP mailbox. For your own environment, update the `database` and `mail` blocks in `install.php` (or hand-write `config/config.php` from `database/schema.sql`) before running it, otherwise it will provision against the live Geek Nation Multiverse database.
+4. Visit `/install.php` and enter the database password, an administrator account, and SMTP mailbox password. This generates `config/config.php` and `config/installed.lock` — neither should be committed.
+5. Signed in as that administrator, run any `upgrade-*.php` scripts you need (Universes, Companies, Brands, Events, Artist Alley, Booth/Collector Marketplaces, Multiverse Academy, Moderation Center) to add each feature module's tables.
+6. Visit `http://localhost:8000` (or your configured URL) and sign in.
+
+## Live Demo
+[geeknationmultiverse.com](https://geeknationmultiverse.com)
+
+## Builders
+- Sean Pisano
+- Marc Delsoin
+- Trevor Rukwava
+- Abdoul Ba
